@@ -3,64 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Photos 圖片上傳器</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="style.css" rel="stylesheet">
+    <title>💕 婚禮回憶上傳 - Google Photos</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <header class="header">
-            <h1><i class="fab fa-google"></i> Google Photos 上傳器</h1>
-            <p>輕鬆將你的圖片上傳到 Google Photos</p>
-        </header>
-
-        <div class="auth-section" id="authSection">
-            <div class="auth-card">
-                <i class="fas fa-shield-alt auth-icon"></i>
-                <h2>需要授權</h2>
-                <p>請先授權應用程式存取你的 Google Photos</p>
-                <button class="auth-btn" onclick="authenticate()">
-                    <i class="fab fa-google"></i>
-                    使用 Google 帳號授權
-                </button>
-            </div>
+        <h1>💕 歡迎來皇展和宇鈞的婚禮 💕</h1>
+        <p class="subtitle">將美好時光永遠保存，與我們一起分享這份喜悅 ✨</p>
+        <p style="text-align: center; margin-bottom: 20px;">上傳成功後工作人員會把照片列印出來，記得散場後到門口櫃檯領取哦</p>
+        
+        <!-- 授權區域 -->
+        <div id="authSection" class="auth-section" style="display: none;">
+            <div class="auth-icon">🔐</div>
+            <h2>需要 Google 授權</h2>
+            <p>為了將您的珍貴照片安全上傳到 Google Photos，<br>我們需要您的授權許可</p>
+            <button id="authBtn" class="auth-btn">
+                <i class="fab fa-google"></i>
+                授權 Google Photos
+            </button>
         </div>
 
-        <div class="upload-section" id="uploadSection" style="display: none;">
+        <!-- 上傳區域 -->
+        <div id="uploadSection" class="upload-section">
             <div class="upload-area" id="uploadArea">
-                <div class="upload-content">
-                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                    <h3>拖拽圖片到這裡</h3>
-                    <p>或者點擊選擇檔案</p>
-                    <input type="file" id="fileInput" multiple accept="image/*" hidden>
-                    <button class="select-btn" id="selectBtn">
-                        <i class="fas fa-folder-open"></i>
-                        選擇圖片
-                    </button>
-                </div>
-            </div>
-
-            <div class="file-list" id="fileList"></div>
-
-            <div class="upload-controls" id="uploadControls" style="display: none;">
-                <button class="upload-btn" id="uploadBtn" onclick="uploadFiles()">
-                    <i class="fas fa-upload"></i>
-                    開始上傳
-                </button>
-                <button class="clear-btn" onclick="clearFiles()">
-                    <i class="fas fa-trash"></i>
-                    清除全部
+                <div class="upload-icon">📸</div>
+                <div class="upload-text">拖曳照片到這裡，或點擊選擇檔案</div>
+                <div class="upload-hint">支援 JPG、PNG、GIF 格式 • 每次最多 10 張照片</div>
+                <input type="file" id="fileInput" class="file-input" multiple accept="image/*">
+                <button class="select-btn" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-images"></i>
+                    選擇照片
                 </button>
             </div>
 
-            <div class="progress-section" id="progressSection" style="display: none;">
+            <!-- 檔案列表 -->
+            <div id="fileList" class="file-list"></div>
+
+            <!-- 上傳按鈕 -->
+            <div style="text-align: center;">
+                <button id="uploadBtn" class="upload-btn" style="display: none;">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    上傳到 Google Photos
+                </button>
+            </div>
+
+            <!-- 進度條 -->
+            <div id="progressSection" class="progress-section">
                 <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
+                    <div id="progressFill" class="progress-fill"></div>
                 </div>
-                <p class="progress-text" id="progressText">準備上傳...</p>
+                <div id="progressText" class="progress-text">準備上傳...</div>
             </div>
-
-            <div class="results-section" id="resultsSection"></div>
         </div>
     </div>
 

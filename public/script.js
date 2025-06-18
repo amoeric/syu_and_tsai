@@ -44,24 +44,27 @@ function authenticate() {
 function setupEventListeners() {
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
-    const selectBtn = document.getElementById('selectBtn');
+    const authBtn = document.getElementById('authBtn');
+    const uploadBtn = document.getElementById('uploadBtn');
+
+    // 授權按鈕事件
+    if (authBtn) {
+        authBtn.addEventListener('click', authenticate);
+    }
+
+    // 上傳按鈕事件
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', uploadFiles);
+    }
 
     // 檔案選擇事件
     fileInput.addEventListener('change', handleFileSelect);
 
-    // 選擇按鈕事件（只在按鈕上，避免重複觸發）
-    selectBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // 阻止事件冒泡
-        fileInput.click();
-    });
-
-    // 拖拽區域事件（只在空白區域點擊時觸發）
+    // 拖拽區域事件
     uploadArea.addEventListener('click', (e) => {
-        // 只有點擊空白區域時才觸發，避免與按鈕衝突
-        if (e.target === uploadArea || e.target.closest('.upload-content') === uploadArea.querySelector('.upload-content')) {
-            if (e.target !== selectBtn && !selectBtn.contains(e.target)) {
-                fileInput.click();
-            }
+        // 避免與按鈕衝突
+        if (!e.target.closest('.select-btn')) {
+            fileInput.click();
         }
     });
     
@@ -106,7 +109,13 @@ function addFiles(files) {
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
     
     if (imageFiles.length === 0) {
-        alert('請選擇圖片檔案！');
+        showNotification('error', '請選擇圖片檔案！', '只支援 JPG、PNG、GIF 格式的圖片');
+        return;
+    }
+
+    // 檢查檔案數量限制
+    if (selectedFiles.length + imageFiles.length > 10) {
+        showNotification('error', '檔案數量超過限制', '每次最多只能上傳 10 張照片');
         return;
     }
 
@@ -118,7 +127,9 @@ function addFiles(files) {
     });
 
     updateFileList();
-    updateUploadControls();
+    updateUploadButton();
+    
+    showNotification('success', '照片已選擇', `已選擇 ${selectedFiles.length} 張美好的回憶照片 📸`);
 }
 
 // 更新檔案清單顯示
@@ -131,16 +142,15 @@ function updateFileList() {
     }
 
     fileList.innerHTML = selectedFiles.map((file, index) => {
-        const preview = URL.createObjectURL(file);
         const fileSize = formatFileSize(file.size);
         
         return `
             <div class="file-item">
                 <div class="file-info">
-                    <img src="${preview}" alt="${file.name}" class="file-preview">
+                    <div class="file-icon">📷</div>
                     <div class="file-details">
-                        <h4>${file.name}</h4>
-                        <p>${fileSize}</p>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${fileSize}</div>
                     </div>
                 </div>
                 <button class="remove-btn" onclick="removeFile(${index})">
@@ -151,17 +161,16 @@ function updateFileList() {
     }).join('');
 }
 
-// 更新上傳控制按鈕
-function updateUploadControls() {
-    const uploadControls = document.getElementById('uploadControls');
+// 更新上傳按鈕
+function updateUploadButton() {
     const uploadBtn = document.getElementById('uploadBtn');
     
     if (selectedFiles.length > 0) {
-        uploadControls.style.display = 'flex';
-        uploadBtn.textContent = `上傳 ${selectedFiles.length} 張圖片`;
+        uploadBtn.style.display = 'inline-block';
+        uploadBtn.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> 上傳 ${selectedFiles.length} 張珍貴回憶`;
         uploadBtn.disabled = false;
     } else {
-        uploadControls.style.display = 'none';
+        uploadBtn.style.display = 'none';
     }
 }
 
@@ -169,31 +178,26 @@ function updateUploadControls() {
 function removeFile(index) {
     selectedFiles.splice(index, 1);
     updateFileList();
-    updateUploadControls();
-}
-
-// 清除所有檔案
-function clearFiles() {
-    selectedFiles = [];
-    updateFileList();
-    updateUploadControls();
-    hideProgress();
-    hideResults();
+    updateUploadButton();
+    
+    if (selectedFiles.length === 0) {
+        hideProgress();
+    }
 }
 
 // 上傳檔案
 async function uploadFiles() {
     if (selectedFiles.length === 0) {
-        alert('請先選擇要上傳的圖片！');
+        showNotification('error', '沒有選擇照片', '請先選擇要分享的美好回憶照片');
         return;
     }
 
     const uploadBtn = document.getElementById('uploadBtn');
     uploadBtn.disabled = true;
-    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 上傳中...';
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在上傳回憶...';
 
     showProgress();
-    updateProgress(0, '準備上傳...');
+    updateProgress(0, '準備將美好回憶上傳到雲端...');
 
     const formData = new FormData();
     selectedFiles.forEach(file => {
@@ -206,61 +210,31 @@ async function uploadFiles() {
             body: formData
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const result = await response.json();
-        updateProgress(100, '上傳完成！');
-        showResults(result.results);
-        
-        // 顯示成功通知
-        const successCount = result.results.filter(r => r.status === 'success').length;
-        const errorCount = result.results.filter(r => r.status === 'error').length;
-        
-        if (successCount > 0 && errorCount === 0) {
-            showNotification(
-                'success',
-                '上傳成功！',
-                `成功上傳 ${successCount} 張圖片到 Google Photos`
-            );
-        } else if (successCount > 0 && errorCount > 0) {
-            showNotification(
-                'info',
-                '部分上傳成功',
-                `成功 ${successCount} 張，失敗 ${errorCount} 張`
-            );
-        } else if (errorCount > 0) {
-            showNotification(
-                'error',
-                '上傳失敗',
-                `${errorCount} 張圖片上傳失敗`
-            );
-        }
-        
-        // 清除已上傳的檔案
-        setTimeout(() => {
-            clearFiles();
-        }, 2000);
 
+        if (response.ok) {
+            updateProgress(100, '所有照片都已成功上傳！');
+            showNotification('success', '上傳成功！', `${selectedFiles.length} 張美好回憶已安全保存到 Google Photos 💕`);
+            
+            // 清空檔案列表
+            selectedFiles = [];
+            updateFileList();
+            updateUploadButton();
+            
+            // 延遲隱藏進度條
+            setTimeout(() => {
+                hideProgress();
+            }, 2000);
+        } else {
+            throw new Error(result.error || '上傳失敗');
+        }
     } catch (error) {
-        console.error('上傳失敗:', error);
-        updateProgress(0, '上傳失敗：' + error.message);
-        showResults([{
-            filename: '上傳錯誤',
-            status: 'error',
-            error: error.message
-        }]);
-        
-        // 顯示錯誤通知
-        showNotification(
-            'error',
-            '網路錯誤',
-            '上傳失敗：' + error.message
-        );
+        console.error('上傳錯誤:', error);
+        updateProgress(0, '上傳失敗');
+        showNotification('error', '上傳失敗', error.message || '請稍後再試，或檢查網路連線');
     } finally {
         uploadBtn.disabled = false;
-        uploadBtn.innerHTML = '<i class="fas fa-upload"></i> 開始上傳';
+        uploadBtn.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> 上傳 ${selectedFiles.length} 張珍貴回憶`;
     }
 }
 
@@ -280,103 +254,77 @@ function updateProgress(percent, text) {
     document.getElementById('progressText').textContent = text;
 }
 
-// 顯示結果
-function showResults(results) {
-    const resultsSection = document.getElementById('resultsSection');
-    
-    resultsSection.innerHTML = results.map(result => {
-        const isSuccess = result.status === 'success';
-        const iconClass = isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle';
-        const resultClass = isSuccess ? 'result-success' : 'result-error';
-        const message = isSuccess ? '上傳成功' : `上傳失敗: ${result.error}`;
-        
-        return `
-            <div class="result-item ${resultClass}">
-                <div class="result-info">
-                    <i class="fas ${iconClass} result-icon"></i>
-                    <div>
-                        <h4>${result.filename}</h4>
-                        <p>${message}</p>
-                    </div>
-                </div>
-                ${isSuccess && result.googlePhotosUrl ? `
-                    <a href="${result.googlePhotosUrl}" target="_blank" class="result-link">
-                        <i class="fas fa-external-link-alt"></i>
-                        在 Google Photos 中查看
-                    </a>
-                ` : ''}
-            </div>
-        `;
-    }).join('');
-}
-
-// 隱藏結果
-function hideResults() {
-    document.getElementById('resultsSection').innerHTML = '';
-}
-
 // 格式化檔案大小
 function formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
-    
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// 通知系統
+// 顯示通知
 function showNotification(type, title, message, duration = 4000) {
     // 移除現有通知
-    const existingNotifications = document.querySelectorAll('.notification');
-    existingNotifications.forEach(n => n.remove());
-    
+    const existingNotification = document.querySelector('.notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+
     // 創建通知元素
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     
-    // 設定圖示
-    let iconClass = 'fas fa-info-circle';
-    if (type === 'success') iconClass = 'fas fa-check-circle';
-    if (type === 'error') iconClass = 'fas fa-exclamation-circle';
-    if (type === 'info') iconClass = 'fas fa-info-circle';
+    // 根據類型選擇圖標
+    let icon = '';
+    switch(type) {
+        case 'success':
+            icon = '💕';
+            break;
+        case 'error':
+            icon = '💔';
+            break;
+        case 'info':
+            icon = '💌';
+            break;
+        default:
+            icon = '📸';
+    }
     
     notification.innerHTML = `
-        <i class="${iconClass} notification-icon"></i>
-        <div class="notification-content">
-            <h4>${title}</h4>
-            <p>${message}</p>
+        <div style="display: flex; align-items: center;">
+            <span style="font-size: 1.2em; margin-right: 10px;">${icon}</span>
+            <div>
+                <strong>${title}</strong><br>
+                <span style="font-size: 0.9em; opacity: 0.9;">${message}</span>
+            </div>
         </div>
-        <button class="notification-close" onclick="closeNotification(this)">
-            <i class="fas fa-times"></i>
-        </button>
+        <button class="close-btn" onclick="closeNotification(this)">×</button>
     `;
-    
+
     // 添加到頁面
     document.body.appendChild(notification);
-    
-    // 觸發動畫
+
+    // 顯示動畫
     setTimeout(() => {
         notification.classList.add('show');
     }, 100);
-    
+
     // 自動關閉
     setTimeout(() => {
-        closeNotification(notification.querySelector('.notification-close'));
+        closeNotification(notification.querySelector('.close-btn'));
     }, duration);
 }
 
 // 關閉通知
 function closeNotification(closeBtn) {
     const notification = closeBtn.closest('.notification');
-    notification.classList.remove('show');
-    
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.parentNode.removeChild(notification);
-        }
-    }, 300);
+    if (notification) {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }
 }
 
 // 檢查 URL 參數以顯示授權結果
