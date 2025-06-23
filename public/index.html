@@ -128,27 +128,9 @@
                                 </li>
                                 <li class="flex items-center">
                                     <span class="material-symbols-outlined text-primary-500 mr-3">check_circle</span>
-                                    上傳的照片小精靈會把照片印出來
+                                    上傳的照片小精靈會把照片印出來哦
                                 </li>
                             </ul>
-                        </div>
-
-                        <div class="mt-8 p-4 bg-primary-50 rounded-xl">
-                            <h4 class="font-semibold text-primary-800 mb-2">留下您的祝福：</h4>
-                            <textarea
-                                placeholder="在這裡寫下您對新人的祝福話語..."
-                                class="w-full p-4 border border-primary-200 rounded-lg resize-none h-24 focus:outline-none focus:border-primary-500 transition-colors duration-300"
-                            ></textarea>
-                            <div class="mt-4 flex flex-col sm:flex-row gap-4">
-                                <input
-                                    type="text"
-                                    placeholder="您的姓名"
-                                    class="flex-1 p-3 border border-primary-200 rounded-lg focus:outline-none focus:border-primary-500 transition-colors duration-300"
-                                />
-                                <button class="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg">
-                                    送出祝福
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -157,26 +139,39 @@
 
         <!-- Guest Messages Section -->
         <section class="py-20 px-4 bg-white">
-            <div class="max-w-4xl mx-auto text-center">
-                <h2 class="text-4xl md:text-5xl font-bold mb-8 text-gray-800">賓客留言</h2>
-                <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-rose-50 to-pink-50 p-6 rounded-2xl shadow-lg transform hover:scale-102 transition-transform duration-300">
-                        <p class="text-lg text-gray-700 mb-4 italic">
-                            "恭喜你們！看到你們在一起這麼幸福，真的很替你們開心。祝你們百年好合，永遠幸福快樂！"
-                        </p>
-                        <p class="text-primary-600 font-semibold">- 王小華</p>
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-8 text-gray-800">賓客留言</h2>
+                <!-- 留言表單 -->
+                <div class="bg-gradient-to-br from-primary-50 to-rose-50 rounded-3xl shadow-xl p-8 mb-12">
+                    <h4 class="text-2xl font-semibold text-center text-primary-800 mb-6">💌 留下您的祝福</h4>
+                    <div class="max-w-2xl mx-auto">
+                        <textarea
+                            placeholder="在這裡寫下您對新人的祝福話語..."
+                            class="message-textarea w-full p-4 border border-primary-200 rounded-lg resize-none h-32 focus:outline-none focus:border-primary-500 transition-colors duration-300 mb-2"
+                            maxlength="500"
+                        ></textarea>
+                        <div class="text-right text-xs text-gray-500 mb-4">最多 500 字</div>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <input
+                                type="text"
+                                placeholder="您的姓名"
+                                class="message-name flex-1 p-3 border border-primary-200 rounded-lg focus:outline-none focus:border-primary-500 transition-colors duration-300"
+                                maxlength="50"
+                            />
+                            <button class="message-submit-btn bg-primary-500 hover:bg-primary-600 text-white px-8 py-3 rounded-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg">
+                                <i class="fas fa-heart mr-2"></i>
+                                送出祝福
+                            </button>
+                        </div>
                     </div>
-                    <div class="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-2xl shadow-lg transform hover:scale-102 transition-transform duration-300">
-                        <p class="text-lg text-gray-700 mb-4 italic">
-                            "祝福新郎新娘白頭偕老，早生貴子！今天的婚禮真的太美了，謝謝你們讓我見證這個美好的時刻。"
-                        </p>
-                        <p class="text-primary-600 font-semibold">- 陳美玲</p>
-                    </div>
-                    <div class="bg-gradient-to-r from-green-50 to-teal-50 p-6 rounded-2xl shadow-lg transform hover:scale-102 transition-transform duration-300">
-                        <p class="text-lg text-gray-700 mb-4 italic">
-                            "看著你們從相識到現在，真的很感動。願你們的愛情像美酒一樣，越久越香醇。新婚快樂！"
-                        </p>
-                        <p class="text-primary-600 font-semibold">- 李志強</p>
+                </div>
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-8 text-gray-800">賓客留言版</h2>
+                <!-- 留言顯示區域 -->
+                <div class="messages-container space-y-6">
+                    <!-- 留言會在這裡動態載入 -->
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-spinner fa-spin text-2xl mb-4"></i>
+                        <p>載入留言中...</p>
                     </div>
                 </div>
             </div>
@@ -189,18 +184,6 @@
                     <span class="material-symbols-outlined text-4xl text-rose-400 mb-4 block">favorite</span>
                     <h3 class="text-2xl font-semibold mb-4">感謝您的參與</h3>
                     <p class="text-gray-300 text-lg">您的出席讓我們的大日子更加完美</p>
-                </div>
-
-                <div class="flex justify-center space-x-6 mb-8">
-                    <button class="w-12 h-12 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transform hover:scale-110 transition-all duration-300">
-                        <i class="fab fa-facebook text-xl"></i>
-                    </button>
-                    <button class="w-12 h-12 bg-pink-600 hover:bg-pink-700 rounded-full flex items-center justify-center transform hover:scale-110 transition-all duration-300">
-                        <i class="fab fa-instagram text-xl"></i>
-                    </button>
-                    <button class="w-12 h-12 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center transform hover:scale-110 transition-all duration-300">
-                        <i class="fab fa-whatsapp text-xl"></i>
-                    </button>
                 </div>
 
                 <p class="text-gray-400">© 2024 皇展 & 宇鈞 婚禮網站</p>

@@ -281,6 +281,60 @@ async function createMediaItem(uploadToken, filename) {
   }
 }
 
+// 留言存儲 (在實際應用中應該使用資料庫)
+let messages = [];
+
+// 隨機漸變背景
+const gradients = [
+  'from-rose-50 to-pink-50',
+  'from-purple-50 to-blue-50',
+  'from-green-50 to-teal-50',
+  'from-yellow-50 to-orange-50',
+  'from-indigo-50 to-purple-50',
+  'from-pink-50 to-rose-50'
+];
+
+// 路由：取得所有留言
+app.get('/messages', (req, res) => {
+  res.json({ messages: [...messages].reverse() }); // 最新的在前面
+});
+
+// 路由：新增留言
+app.post('/messages', (req, res) => {
+  try {
+    const { name, message } = req.body;
+    
+    if (!name || !message) {
+      return res.status(400).json({ error: '姓名和留言內容都是必填的' });
+    }
+    
+    if (message.length > 500) {
+      return res.status(400).json({ error: '留言內容不能超過 500 字' });
+    }
+    
+    const newMessage = {
+      id: messages.length + 1,
+      name: name.trim(),
+      message: message.trim(),
+      timestamp: new Date().toISOString(),
+      gradient: gradients[Math.floor(Math.random() * gradients.length)]
+    };
+    
+    messages.push(newMessage);
+    
+    console.log(`💌 新留言來自 ${newMessage.name}: ${newMessage.message.substring(0, 50)}...`);
+    
+    res.json({ 
+      success: true, 
+      message: '留言已成功送出！',
+      data: newMessage 
+    });
+  } catch (error) {
+    console.error('❌ 留言錯誤:', error);
+    res.status(500).json({ error: '留言失敗，請稍後再試' });
+  }
+});
+
 // 路由：檢查授權狀態
 app.get('/auth-status', (req, res) => {
   const isAuthenticated = oauth2Client.credentials && oauth2Client.credentials.access_token;

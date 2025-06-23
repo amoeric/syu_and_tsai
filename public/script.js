@@ -4,6 +4,8 @@ let selectedFiles = [];
 document.addEventListener('DOMContentLoaded', function() {
     checkAuthStatus();
     setupEventListeners();
+    setupMessageForm();
+    loadMessages();
 });
 
 // 檢查授權狀態
@@ -347,4 +349,145 @@ if (urlParams.get('auth') === 'success') {
         '授權失敗',
         '無法連接到 Google Photos，請重試'
     );
+}
+
+// 設定留言表單
+function setupMessageForm() {
+    const messageForm = document.querySelector('.message-form');
+    const messageTextarea = document.querySelector('.message-textarea');
+    const messageNameInput = document.querySelector('.message-name');
+    const messageSubmitBtn = document.querySelector('.message-submit-btn');
+
+    if (messageSubmitBtn) {
+        messageSubmitBtn.addEventListener('click', submitMessage);
+    }
+
+    // 字數限制提示
+    if (messageTextarea) {
+        messageTextarea.addEventListener('input', function() {
+            const charCount = this.value.length;
+            const maxChars = 500;
+            
+            if (charCount > maxChars) {
+                this.value = this.value.substring(0, maxChars);
+            }
+        });
+    }
+}
+
+// 載入留言
+async function loadMessages() {
+    try {
+        const response = await fetch('/messages');
+        const data = await response.json();
+        
+        if (data.messages) {
+            displayMessages(data.messages);
+        }
+    } catch (error) {
+        console.error('載入留言失敗:', error);
+    }
+}
+
+// 顯示留言
+function displayMessages(messages) {
+    const messagesContainer = document.querySelector('.messages-container');
+    
+    if (!messagesContainer) return;
+    
+    if (messages.length === 0) {
+        messagesContainer.innerHTML = `
+            <div class="text-center py-16">
+                <div class="text-6xl mb-4">💌</div>
+                <h3 class="text-2xl font-semibold text-gray-600 mb-2">趕快留言吧</h3>
+                <p class="text-gray-500">成為第一個為新人留下祝福的人！</p>
+            </div>
+        `;
+        return;
+    }
+    
+    messagesContainer.innerHTML = messages.map(msg => `
+        <div class="bg-gradient-to-r ${msg.gradient} p-6 rounded-2xl shadow-lg transform hover:scale-102 transition-transform duration-300">
+            <p class="text-lg text-gray-700 mb-4 italic">
+                "${msg.message}"
+            </p>
+            <div class="flex justify-between items-center">
+                <p class="text-primary-600 font-semibold">- ${msg.name}</p>
+                <p class="text-xs text-gray-500">${formatDate(msg.timestamp)}</p>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 提交留言
+async function submitMessage() {
+    const messageTextarea = document.querySelector('.message-textarea');
+    const messageNameInput = document.querySelector('.message-name');
+    const messageSubmitBtn = document.querySelector('.message-submit-btn');
+    
+    const name = messageNameInput.value.trim();
+    const message = messageTextarea.value.trim();
+    
+    if (!name || !message) {
+        showNotification('error', '請填寫完整資訊', '姓名和祝福內容都是必填的');
+        return;
+    }
+    
+    if (message.length > 500) {
+        showNotification('error', '內容太長', '祝福內容不能超過 500 字');
+        return;
+    }
+    
+    // 顯示提交狀態
+    const originalText = messageSubmitBtn.innerHTML;
+    messageSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>送出中...';
+    messageSubmitBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name, message })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showNotification('success', '留言成功！', '您的祝福已經送出，感謝您的分享 💕');
+            
+            // 清空表單
+            messageTextarea.value = '';
+            messageNameInput.value = '';
+            
+            // 重新載入留言
+            loadMessages();
+        } else {
+            throw new Error(result.error || '留言失敗');
+        }
+    } catch (error) {
+        console.error('留言錯誤:', error);
+        showNotification('error', '留言失敗', error.message || '請稍後再試');
+    } finally {
+        // 恢復按鈕狀態
+        messageSubmitBtn.innerHTML = originalText;
+        messageSubmitBtn.disabled = false;
+    }
+}
+
+// 格式化日期
+function formatDate(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) {
+        return '今天';
+    } else if (diffDays <= 7) {
+        return `${diffDays} 天前`;
+    } else {
+        return date.toLocaleDateString('zh-TW');
+    }
 } 
