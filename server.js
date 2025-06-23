@@ -82,8 +82,8 @@ app.get('/auth', (req, res) => {
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: [
-      'https://www.googleapis.com/auth/photoslibrary',
-      'https://www.googleapis.com/auth/photoslibrary.appendonly'
+      'https://www.googleapis.com/auth/photoslibrary.appendonly',
+      'https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata'
     ],
     prompt: 'consent', // 強制顯示同意畫面以取得 refresh_token
     include_granted_scopes: true
@@ -91,8 +91,8 @@ app.get('/auth', (req, res) => {
   
   console.log('🔐 開始 OAuth 授權流程...');
   console.log('🔍 請求的權限範圍:');
-  console.log('  - photoslibrary (讀取)');
-  console.log('  - photoslibrary.appendonly (上傳)');
+  console.log('  - photoslibrary.appendonly (上傳 & 建立相簿)');
+  console.log('  - photoslibrary.readonly.appcreateddata (讀取應用建立的內容)');
   console.log('重新導向到:', authUrl);
   
   res.redirect(authUrl);
@@ -151,6 +151,9 @@ app.get('/auth/callback', async (req, res) => {
       token_type: tokens.token_type || 'Bearer',
       expires_in: tokens.expires_in
     });
+    
+    // 清除相簿快取，因為可能是不同的使用者
+    cachedAlbumId = null;
     
     // 記錄成功訊息
     console.log('🎉 授權成功！');
@@ -255,9 +258,18 @@ async function uploadMediaItem(imageBuffer, filename) {
 // 指定的婚禮相簿名稱
 const WEDDING_ALBUM_NAME = '0629婚禮';
 
+// 快取相簿 ID，避免重複查詢
+let cachedAlbumId = null;
+
 // 輔助函數：尋找或建立婚禮相簿
 async function findOrCreateWeddingAlbum() {
   try {
+    // 如果已經有快取的相簿 ID，直接返回
+    if (cachedAlbumId) {
+      console.log(`📁 使用快取的相簿 ID: ${cachedAlbumId}`);
+      return cachedAlbumId;
+    }
+    
     console.log(`🔍 尋找相簿: ${WEDDING_ALBUM_NAME}`);
     
     // 先嘗試尋找現有相簿
@@ -274,6 +286,7 @@ async function findOrCreateWeddingAlbum() {
     
     if (existingAlbum) {
       console.log(`📁 找到現有相簿: ${WEDDING_ALBUM_NAME} (ID: ${existingAlbum.id})`);
+      cachedAlbumId = existingAlbum.id; // 快取相簿 ID
       return existingAlbum.id;
     }
     
@@ -293,10 +306,12 @@ async function findOrCreateWeddingAlbum() {
     });
     
     console.log(`✅ 成功建立相簿: ${WEDDING_ALBUM_NAME} (ID: ${createResponse.data.id})`);
+    cachedAlbumId = createResponse.data.id; // 快取新建立的相簿 ID
     return createResponse.data.id;
     
   } catch (error) {
-    console.error(`❌ 尋找/建立相簿失敗:`, error.message);
+    console.error(`❌ 相簿操作失敗:`, error.message);
+    console.log(`📤 將上傳到 Google Photos 主頁面`);
     // 如果相簿操作失敗，返回 null，照片會上傳到主頁面
     return null;
   }
