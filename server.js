@@ -3,10 +3,27 @@ const multer = require('multer');
 const { google } = require('googleapis');
 const fs = require('fs');
 const path = require('path');
+const Database = require('better-sqlite3');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 7700;
+
+// 初始化資料庫
+const db = new Database('wedding_messages.db');
+
+// 建立留言表格
+db.exec(`
+  CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    message TEXT NOT NULL,
+    timestamp DATETIME DEFAULT (datetime('now', '+8 hours')),
+    gradient TEXT NOT NULL
+  )
+`);
+
+console.log('📊 資料庫初始化完成');
 
 // 中間件
 app.use(express.json());
@@ -281,9 +298,6 @@ async function createMediaItem(uploadToken, filename) {
   }
 }
 
-// 留言存儲 (在實際應用中應該使用資料庫)
-let messages = [];
-
 // 隨機漸變背景
 const gradients = [
   'from-rose-50 to-pink-50',
@@ -294,9 +308,38 @@ const gradients = [
   'from-pink-50 to-rose-50'
 ];
 
-// 路由：取得所有留言
+// 準備資料庫語句
+const insertMessage = db.prepare('INSERT INTO messages (name, message, gradient, timestamp) VALUES (?, ?, ?, ?)');
+const selectAllMessages = db.prepare('SELECT * FROM messages ORDER BY timestamp DESC');
+const selectMessagesWithLimit = db.prepare('SELECT * FROM messages ORDER BY timestamp DESC LIMIT ? OFFSET ?');
+const countMessages = db.prepare('SELECT COUNT(*) as total FROM messages');
+
+// 路由：取得留言（支援分頁）
 app.get('/messages', (req, res) => {
-  res.json({ messages: [...messages].reverse() }); // 最新的在前面
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const offset = (page - 1) * limit;
+    
+    const messages = selectMessagesWithLimit.all(limit, offset);
+    const totalCount = countMessages.get().total;
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasMore = page < totalPages;
+    
+    res.json({ 
+      messages,
+      pagination: {
+        currentPage: page,
+        limit,
+        total: totalCount,
+        totalPages,
+        hasMore
+      }
+    });
+  } catch (error) {
+    console.error('❌ 取得留言失敗:', error);
+    res.status(500).json({ error: '取得留言失敗' });
+  }
 });
 
 // 路由：新增留言
@@ -312,15 +355,25 @@ app.post('/messages', (req, res) => {
       return res.status(400).json({ error: '留言內容不能超過 500 字' });
     }
     
-    const newMessage = {
-      id: messages.length + 1,
-      name: name.trim(),
-      message: message.trim(),
-      timestamp: new Date().toISOString(),
-      gradient: gradients[Math.floor(Math.random() * gradients.length)]
-    };
+    const trimmedName = name.trim();
+    const trimmedMessage = message.trim();
+    const selectedGradient = gradients[Math.floor(Math.random() * gradients.length)];
     
-    messages.push(newMessage);
+    // 產生 UTC+8 時間
+    const now = new Date();
+    const utc8Time = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    const timestamp = utc8Time.toISOString().replace('T', ' ').slice(0, 19);
+    
+    // 插入到資料庫
+    const result = insertMessage.run(trimmedName, trimmedMessage, selectedGradient, timestamp);
+    
+    const newMessage = {
+      id: result.lastInsertRowid,
+      name: trimmedName,
+      message: trimmedMessage,
+      timestamp: timestamp,
+      gradient: selectedGradient
+    };
     
     console.log(`💌 新留言來自 ${newMessage.name}: ${newMessage.message.substring(0, 50)}...`);
     
@@ -350,4 +403,19 @@ app.listen(PORT, () => {
   console.log('');
   console.log('📝 請前往 http://localhost:7700 開始使用');
   console.log('🔐 首次使用需要 Google 授權');
+});
+
+// 優雅關閉資料庫連接
+process.on('SIGINT', () => {
+  console.log('\n🔄 正在關閉服務器...');
+  db.close();
+  console.log('✅ 資料庫連接已關閉');
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n🔄 正在關閉服務器...');
+  db.close();
+  console.log('✅ 資料庫連接已關閉');
+  process.exit(0);
 }); 

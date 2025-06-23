@@ -1,10 +1,17 @@
 let selectedFiles = [];
 
+// 分頁變數
+let currentPage = 1;
+let isLoading = false;
+let hasMore = true;
+let allMessages = [];
+
 // 頁面載入時檢查授權狀態
 document.addEventListener('DOMContentLoaded', function() {
     checkAuthStatus();
     setupEventListeners();
     setupMessageForm();
+    setupInfiniteScroll();
     loadMessages();
 });
 
@@ -376,16 +383,34 @@ function setupMessageForm() {
 }
 
 // 載入留言
-async function loadMessages() {
+async function loadMessages(page = 1, append = false) {
+    if (isLoading) return;
+    
+    isLoading = true;
+    updateLoadingState(true);
+    
     try {
-        const response = await fetch('/messages');
+        const response = await fetch(`/messages?page=${page}&limit=5`);
         const data = await response.json();
         
         if (data.messages) {
-            displayMessages(data.messages);
+            if (append) {
+                allMessages = [...allMessages, ...data.messages];
+            } else {
+                allMessages = data.messages;
+            }
+            
+            hasMore = data.pagination.hasMore;
+            currentPage = data.pagination.currentPage;
+            
+            displayMessages(allMessages);
         }
     } catch (error) {
         console.error('載入留言失敗:', error);
+        showNotification('error', '載入失敗', '無法載入留言，請重新整理頁面');
+    } finally {
+        isLoading = false;
+        updateLoadingState(false);
     }
 }
 
@@ -406,17 +431,31 @@ function displayMessages(messages) {
         return;
     }
     
-    messagesContainer.innerHTML = messages.map(msg => `
+    const messagesHTML = messages.map(msg => `
         <div class="bg-gradient-to-r ${msg.gradient} p-6 rounded-2xl shadow-lg transform hover:scale-102 transition-transform duration-300">
             <p class="text-lg text-gray-700 mb-4 italic">
                 "${msg.message}"
             </p>
             <div class="flex justify-between items-center">
                 <p class="text-primary-600 font-semibold">- ${msg.name}</p>
-                <p class="text-xs text-gray-500">${formatDate(msg.timestamp)}</p>
+                <p class="text-xs text-gray-500">${formatMessageDate(msg.timestamp)}</p>
             </div>
         </div>
     `).join('');
+    
+    const loadingHTML = hasMore ? `
+        <div id="loading-more" class="text-center py-8 ${isLoading ? '' : 'hidden'}">
+            <i class="fas fa-spinner fa-spin text-2xl text-primary-500 mb-2"></i>
+            <p class="text-gray-500">載入更多留言...</p>
+        </div>
+        <div id="load-more-trigger" class="h-4"></div>
+    ` : `
+        <div class="text-center py-8 text-gray-400">
+            <p class="text-sm">✨ 已顯示所有留言</p>
+        </div>
+    `;
+    
+    messagesContainer.innerHTML = messagesHTML + loadingHTML;
 }
 
 // 提交留言
@@ -461,7 +500,10 @@ async function submitMessage() {
             messageTextarea.value = '';
             messageNameInput.value = '';
             
-            // 重新載入留言
+            // 重新載入留言（重置為第一頁）
+            currentPage = 1;
+            hasMore = true;
+            allMessages = [];
             loadMessages();
         } else {
             throw new Error(result.error || '留言失敗');
@@ -476,7 +518,71 @@ async function submitMessage() {
     }
 }
 
-// 格式化日期
+// 設定無限滾動
+function setupInfiniteScroll() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && hasMore && !isLoading) {
+                loadMessages(currentPage + 1, true);
+            }
+        });
+    }, {
+        rootMargin: '100px'
+    });
+
+    // 監聽滾動觸發器
+    setInterval(() => {
+        const trigger = document.getElementById('load-more-trigger');
+        if (trigger) {
+            observer.observe(trigger);
+        }
+    }, 1000);
+}
+
+// 更新載入狀態
+function updateLoadingState(loading) {
+    const loadingElement = document.getElementById('loading-more');
+    if (loadingElement) {
+        if (loading) {
+            loadingElement.classList.remove('hidden');
+        } else {
+            loadingElement.classList.add('hidden');
+        }
+    }
+}
+
+// 格式化留言日期
+function formatMessageDate(timestamp) {
+    // timestamp 格式是 "2024-12-23 14:30:25"，這是 UTC+8 時間
+    // 直接解析為本地時間
+    const date = new Date(timestamp.replace(' ', 'T'));
+    const now = new Date();
+    
+    // 取得今天和留言日期（都用本地時間）
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.floor((today - messageDate) / (1000 * 60 * 60 * 24));
+    
+    // 格式化時間
+    const timeStr = timestamp.split(' ')[1]; // 直接取時間部分
+    
+    // 今天顯示時：分：秒
+    if (diffDays === 0) {
+        return timeStr;
+    }
+    // 昨天顯示：昨天 時：分：秒
+    else if (diffDays === 1) {
+        return '昨天 ' + timeStr;
+    }
+    // 更早顯示：月/日 時：分：秒
+    else {
+        const datePart = timestamp.split(' ')[0]; // "2024-12-23"
+        const [year, month, day] = datePart.split('-');
+        return `${month}/${day} ${timeStr}`;
+    }
+}
+
+// 格式化日期（保留原有功能）
 function formatDate(timestamp) {
     const date = new Date(timestamp);
     const now = new Date();
