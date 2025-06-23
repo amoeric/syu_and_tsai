@@ -19,7 +19,18 @@ db.exec(`
     name TEXT NOT NULL,
     message TEXT NOT NULL,
     timestamp DATETIME DEFAULT (datetime('now', '+8 hours')),
-    gradient TEXT NOT NULL
+    gradient TEXT NOT NULL,
+    avatar TEXT
+  )
+`);
+
+// 建立使用者頭像表格
+db.exec(`
+  CREATE TABLE IF NOT EXISTS user_avatars (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    avatar TEXT NOT NULL,
+    created_at DATETIME DEFAULT (datetime('now', '+8 hours'))
   )
 `);
 
@@ -28,6 +39,7 @@ console.log('📊 資料庫初始化完成');
 // 中間件
 app.use(express.json());
 app.use(express.static('public'));
+app.use('/images', express.static('images')); // 提供頭像圖片訪問
 app.use(express.urlencoded({ extended: true }));
 
 // 配置 multer 用於檔案上傳
@@ -383,8 +395,66 @@ const gradients = [
   'from-pink-50 to-rose-50'
 ];
 
+// 取得所有可用的頭像
+function getAvailableAvatars() {
+  const avatarsDir = path.join(__dirname, 'images', 'avatars');
+  try {
+    const files = fs.readdirSync(avatarsDir);
+    return files
+      .filter(file => file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.jpeg'))
+      .map(file => `images/avatars/${file}`);
+  } catch (error) {
+    console.error('❌ 讀取頭像資料夾失敗:', error);
+    return [];
+  }
+}
+
+// 為使用者分配頭像
+function assignAvatarToUser(userName) {
+  const availableAvatars = getAvailableAvatars();
+  if (availableAvatars.length === 0) {
+    return null;
+  }
+  
+  // 使用使用者名稱作為種子來產生一致的隨機數
+  let hash = 0;
+  for (let i = 0; i < userName.length; i++) {
+    const char = userName.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // 轉換為 32 位整數
+  }
+  
+  const index = Math.abs(hash) % availableAvatars.length;
+  return availableAvatars[index];
+}
+
+// 取得或建立使用者頭像
+function getUserAvatar(userName) {
+  const selectUserAvatar = db.prepare('SELECT avatar FROM user_avatars WHERE name = ?');
+  const insertUserAvatar = db.prepare('INSERT INTO user_avatars (name, avatar) VALUES (?, ?)');
+  
+  // 先檢查是否已有頭像
+  const existingAvatar = selectUserAvatar.get(userName);
+  if (existingAvatar) {
+    return existingAvatar.avatar;
+  }
+  
+  // 分配新頭像
+  const newAvatar = assignAvatarToUser(userName);
+  if (newAvatar) {
+    try {
+      insertUserAvatar.run(userName, newAvatar);
+      return newAvatar;
+    } catch (error) {
+      console.error('❌ 儲存使用者頭像失敗:', error);
+    }
+  }
+  
+  return null;
+}
+
 // 準備資料庫語句
-const insertMessage = db.prepare('INSERT INTO messages (name, message, gradient, timestamp) VALUES (?, ?, ?, ?)');
+const insertMessage = db.prepare('INSERT INTO messages (name, message, gradient, timestamp, avatar) VALUES (?, ?, ?, ?, ?)');
 const selectAllMessages = db.prepare('SELECT * FROM messages ORDER BY timestamp DESC');
 const selectMessagesWithLimit = db.prepare('SELECT * FROM messages ORDER BY timestamp DESC LIMIT ? OFFSET ?');
 const countMessages = db.prepare('SELECT COUNT(*) as total FROM messages');
@@ -434,20 +504,24 @@ app.post('/messages', (req, res) => {
     const trimmedMessage = message.trim();
     const selectedGradient = gradients[Math.floor(Math.random() * gradients.length)];
     
+    // 取得使用者頭像
+    const userAvatar = getUserAvatar(trimmedName);
+    
     // 產生 UTC+8 時間
     const now = new Date();
     const utc8Time = new Date(now.getTime() + (8 * 60 * 60 * 1000));
     const timestamp = utc8Time.toISOString().replace('T', ' ').slice(0, 19);
     
     // 插入到資料庫
-    const result = insertMessage.run(trimmedName, trimmedMessage, selectedGradient, timestamp);
+    const result = insertMessage.run(trimmedName, trimmedMessage, selectedGradient, timestamp, userAvatar);
     
     const newMessage = {
       id: result.lastInsertRowid,
       name: trimmedName,
       message: trimmedMessage,
       timestamp: timestamp,
-      gradient: selectedGradient
+      gradient: selectedGradient,
+      avatar: userAvatar
     };
     
     console.log(`💌 新留言來自 ${newMessage.name}: ${newMessage.message.substring(0, 50)}...`);

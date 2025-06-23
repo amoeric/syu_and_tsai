@@ -429,7 +429,7 @@ function setupMessageForm() {
         messageSubmitBtn.addEventListener('click', submitMessage);
     }
 
-    // 字數限制提示
+    // 字數限制提示和自動調整高度
     if (messageTextarea) {
         messageTextarea.addEventListener('input', function() {
             const charCount = this.value.length;
@@ -437,6 +437,18 @@ function setupMessageForm() {
             
             if (charCount > maxChars) {
                 this.value = this.value.substring(0, maxChars);
+            }
+            
+            // 自動調整 textarea 高度
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+        
+        // Enter 鍵發送留言，Shift+Enter 換行
+        messageTextarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submitMessage();
             }
         });
     }
@@ -491,27 +503,52 @@ function displayMessages(messages) {
         return;
     }
     
-    const messagesHTML = messages.map(msg => `
-        <div class="bg-gradient-to-r ${msg.gradient} p-6 rounded-2xl shadow-lg transform hover:scale-102 transition-transform duration-300">
-            <p class="text-lg text-gray-700 mb-4 italic">
-                "${msg.message}"
-            </p>
-            <div class="flex justify-between items-center">
-                <p class="text-primary-600 font-semibold">- ${msg.name}</p>
-                <p class="text-xs text-gray-500">${formatMessageDate(msg.timestamp)}</p>
+    const messagesHTML = messages.map((msg, index) => {
+        // 使用資料庫中的頭像，如果沒有則使用預設頭像
+        const avatarSrc = msg.avatar || 'images/avatars/cat.png';
+        
+        return `
+            <div class="flex items-start space-x-4 mb-6">
+                <!-- 頭像 -->
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 rounded-full bg-gray-100 border-2 border-white shadow-sm overflow-hidden">
+                        <img src="${avatarSrc}" alt="${msg.name}的頭像" class="w-full h-full object-cover" onerror="this.src='images/avatars/cat.png'">
+                    </div>
+                </div>
+                
+                <!-- 訊息氣泡 -->
+                <div class="flex-1">
+                    <!-- 名稱和時間 -->
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm font-medium text-gray-700">${msg.name}</p>
+                        <p class="text-xs text-gray-400 ml-2">${formatMessageDate(msg.timestamp)}</p>
+                    </div>
+                    
+                    <!-- 氣泡框 -->
+                    <div class="bg-white rounded-2xl rounded-tl-sm p-4 shadow-sm border border-gray-100 relative">
+                        <!-- 氣泡箭頭 -->
+                        <div class="absolute -left-2 top-3 w-0 h-0 border-t-8 border-t-transparent border-r-8 border-r-white border-b-8 border-b-transparent"></div>
+                        <div class="absolute -left-2.5 top-3 w-0 h-0 border-t-8 border-t-transparent border-r-8 border-r-gray-100 border-b-8 border-b-transparent"></div>
+                        
+                        <!-- 留言內容 -->
+                        <p class="text-gray-800 leading-relaxed text-sm">
+                            ${msg.message}
+                        </p>
+                    </div>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
     
     const loadingHTML = hasMore ? `
         <div id="loading-more" class="text-center py-8 ${isLoading ? '' : 'hidden'}">
-            <i class="fas fa-spinner fa-spin text-2xl text-primary-500 mb-2"></i>
+            <i class="fas fa-spinner fa-spin text-2xl text-gray-400 mb-2"></i>
             <p class="text-gray-500">載入更多留言...</p>
         </div>
         <div id="load-more-trigger" class="h-4"></div>
     ` : `
         <div class="text-center py-8 text-gray-400">
-            <p class="text-sm">✨ 已顯示所有留言</p>
+            <p class="text-sm">已顯示所有留言</p>
         </div>
     `;
     
@@ -618,27 +655,44 @@ function formatMessageDate(timestamp) {
     const date = new Date(timestamp.replace(' ', 'T'));
     const now = new Date();
     
-    // 取得今天和留言日期（都用本地時間）
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const diffDays = Math.floor((today - messageDate) / (1000 * 60 * 60 * 24));
+    // 計算時間差（毫秒）
+    const diffMs = now - date;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     
-    // 格式化時間
-    const timeStr = timestamp.split(' ')[1]; // 直接取時間部分
-    
-    // 今天顯示時：分：秒
-    if (diffDays === 0) {
-        return timeStr;
+    // 小於 1 分鐘顯示「剛剛」
+    if (diffMinutes < 1) {
+        return '剛剛';
     }
-    // 昨天顯示：昨天 時：分：秒
-    else if (diffDays === 1) {
-        return '昨天 ' + timeStr;
+    // 小於 1 小時顯示「x 分鐘前」
+    else if (diffMinutes < 60) {
+        return `${diffMinutes} 分鐘前`;
     }
-    // 更早顯示：月/日 時：分：秒
+    // 大於等於 1 小時，使用原本的顯示方式
     else {
-        const datePart = timestamp.split(' ')[0]; // "2024-12-23"
-        const [year, month, day] = datePart.split('-');
-        return `${month}/${day} ${timeStr}`;
+        // 取得今天和留言日期（都用本地時間）
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const daysDiff = Math.floor((today - messageDate) / (1000 * 60 * 60 * 24));
+        
+        // 格式化時間
+        const timeStr = timestamp.split(' ')[1]; // 直接取時間部分
+        
+        // 今天顯示時：分：秒
+        if (daysDiff === 0) {
+            return timeStr;
+        }
+        // 昨天顯示：昨天 時：分：秒
+        else if (daysDiff === 1) {
+            return '昨天 ' + timeStr;
+        }
+        // 更早顯示：月/日 時：分：秒
+        else {
+            const datePart = timestamp.split(' ')[0]; // "2024-12-23"
+            const [year, month, day] = datePart.split('-');
+            return `${month}/${day} ${timeStr}`;
+        }
     }
 }
 
