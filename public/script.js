@@ -226,7 +226,7 @@ async function uploadFiles() {
 
         if (response.ok) {
             updateProgress(100, '所有照片都已成功上傳！');
-            showNotification('success', '上傳成功！', `${selectedFiles.length} 張美好回憶已安全保存到 Google Photos 💕`);
+            showNotification('success', '上傳成功！', `${selectedFiles.length} 張美好回憶已安全保存到 "0629婚禮" 相簿 💕`);
             
             // 清空檔案列表
             selectedFiles = [];

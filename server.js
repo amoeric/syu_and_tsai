@@ -187,7 +187,7 @@ app.post('/upload', upload.array('images', 10), async (req, res) => {
         // 步驟 1: 上傳圖片資料到 Google Photos
         const uploadToken = await uploadMediaItem(imageBuffer, file.originalname);
         
-        // 步驟 2: 建立媒體項目
+        // 步驟 2: 建立媒體項目（上傳到指定相簿）
         const mediaResponse = await createMediaItem(uploadToken, file.originalname);
         
         uploadResults.push({
@@ -252,10 +252,80 @@ async function uploadMediaItem(imageBuffer, filename) {
   }
 }
 
+// 指定的婚禮相簿名稱
+const WEDDING_ALBUM_NAME = '0629婚禮';
+
+// 輔助函數：尋找或建立婚禮相簿
+async function findOrCreateWeddingAlbum() {
+  try {
+    console.log(`🔍 尋找相簿: ${WEDDING_ALBUM_NAME}`);
+    
+    // 先嘗試尋找現有相簿
+    const albumsResponse = await oauth2Client.request({
+      method: 'GET',
+      url: 'https://photoslibrary.googleapis.com/v1/albums',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    const albums = albumsResponse.data.albums || [];
+    const existingAlbum = albums.find(album => album.title === WEDDING_ALBUM_NAME);
+    
+    if (existingAlbum) {
+      console.log(`📁 找到現有相簿: ${WEDDING_ALBUM_NAME} (ID: ${existingAlbum.id})`);
+      return existingAlbum.id;
+    }
+    
+    // 如果沒有找到，建立新相簿
+    console.log(`📁 建立新相簿: ${WEDDING_ALBUM_NAME}`);
+    const createResponse = await oauth2Client.request({
+      method: 'POST',
+      url: 'https://photoslibrary.googleapis.com/v1/albums',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        album: {
+          title: WEDDING_ALBUM_NAME
+        }
+      })
+    });
+    
+    console.log(`✅ 成功建立相簿: ${WEDDING_ALBUM_NAME} (ID: ${createResponse.data.id})`);
+    return createResponse.data.id;
+    
+  } catch (error) {
+    console.error(`❌ 尋找/建立相簿失敗:`, error.message);
+    // 如果相簿操作失敗，返回 null，照片會上傳到主頁面
+    return null;
+  }
+}
+
 // 輔助函數：建立媒體項目
 async function createMediaItem(uploadToken, filename) {
   try {
-    console.log(`  🔧 建立媒體項目: ${filename}`);
+    // 取得婚禮相簿 ID
+    const albumId = await findOrCreateWeddingAlbum();
+    
+    console.log(`  🔧 建立媒體項目: ${filename}${albumId ? ` (相簿: ${WEDDING_ALBUM_NAME})` : ' (主頁面)'}`);
+    
+    const requestBody = {
+      newMediaItems: [
+        {
+          description: `婚禮照片 - 上傳於 ${new Date().toLocaleString('zh-TW')}`,
+          simpleMediaItem: {
+            uploadToken: uploadToken,
+            fileName: filename
+          }
+        }
+      ]
+    };
+    
+    // 如果有相簿 ID，則指定上傳到該相簿
+    if (albumId) {
+      requestBody.albumId = albumId;
+    }
     
     const response = await oauth2Client.request({
       method: 'POST',
@@ -263,17 +333,7 @@ async function createMediaItem(uploadToken, filename) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        newMediaItems: [
-          {
-            description: `上傳於 ${new Date().toLocaleString('zh-TW')}`,
-            simpleMediaItem: {
-              uploadToken: uploadToken,
-              fileName: filename
-            }
-          }
-        ]
-      })
+      body: JSON.stringify(requestBody)
     });
     
     if (!response.data || !response.data.newMediaItemResults || response.data.newMediaItemResults.length === 0) {
@@ -290,7 +350,7 @@ async function createMediaItem(uploadToken, filename) {
       throw new Error('建立媒體項目失敗：未返回媒體項目');
     }
     
-    console.log(`  ✅ 媒體項目建立成功`);
+    console.log(`  ✅ 媒體項目建立成功${albumId ? ` (已加入 ${WEDDING_ALBUM_NAME} 相簿)` : ''}`);
     return result.mediaItem;
   } catch (error) {
     console.error(`  ❌ 建立媒體項目失敗:`, error.message);
