@@ -25,14 +25,14 @@ async function checkAuthStatus() {
 
 // 顯示授權區塊
 function showAuthSection() {
-    document.getElementById('authSection').style.display = 'block';
-    document.getElementById('uploadSection').style.display = 'none';
+    document.getElementById('authSection').classList.remove('hidden');
+    document.getElementById('uploadSection').classList.add('hidden');
 }
 
 // 顯示上傳區塊
 function showUploadSection() {
-    document.getElementById('authSection').style.display = 'none';
-    document.getElementById('uploadSection').style.display = 'block';
+    document.getElementById('authSection').classList.add('hidden');
+    document.getElementById('uploadSection').classList.remove('hidden');
 }
 
 // 授權函數
@@ -85,19 +85,22 @@ function handleFileSelect(event) {
 // 處理拖拽懸停
 function handleDragOver(event) {
     event.preventDefault();
-    event.currentTarget.classList.add('dragover');
+    event.currentTarget.classList.add('border-primary-500');
+    event.currentTarget.classList.add('bg-primary-50');
 }
 
 // 處理拖拽離開
 function handleDragLeave(event) {
     event.preventDefault();
-    event.currentTarget.classList.remove('dragover');
+    event.currentTarget.classList.remove('border-primary-500');
+    event.currentTarget.classList.remove('bg-primary-50');
 }
 
 // 處理檔案拖拽
 function handleDrop(event) {
     event.preventDefault();
-    event.currentTarget.classList.remove('dragover');
+    event.currentTarget.classList.remove('border-primary-500');
+    event.currentTarget.classList.remove('bg-primary-50');
     
     const files = Array.from(event.dataTransfer.files);
     addFiles(files);
@@ -145,15 +148,15 @@ function updateFileList() {
         const fileSize = formatFileSize(file.size);
         
         return `
-            <div class="file-item">
-                <div class="file-info">
-                    <div class="file-icon">📷</div>
-                    <div class="file-details">
-                        <div class="file-name">${file.name}</div>
-                        <div class="file-size">${fileSize}</div>
+            <div class="flex justify-between items-center p-4 bg-primary-50 border border-primary-200 rounded-lg mb-2 hover:bg-primary-100 transition-colors duration-200">
+                <div class="flex items-center flex-1">
+                    <div class="text-2xl mr-4">📷</div>
+                    <div class="flex-1">
+                        <div class="font-medium text-gray-800">${file.name}</div>
+                        <div class="text-sm text-gray-500">${fileSize}</div>
                     </div>
                 </div>
-                <button class="remove-btn" onclick="removeFile(${index})">
+                <button class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors duration-200" onclick="removeFile(${index})">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -166,11 +169,11 @@ function updateUploadButton() {
     const uploadBtn = document.getElementById('uploadBtn');
     
     if (selectedFiles.length > 0) {
-        uploadBtn.style.display = 'inline-block';
-        uploadBtn.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> 上傳 ${selectedFiles.length} 張珍貴回憶`;
+        uploadBtn.classList.remove('hidden');
+        uploadBtn.innerHTML = `<i class="fas fa-cloud-upload-alt mr-2"></i> 上傳 ${selectedFiles.length} 張珍貴回憶`;
         uploadBtn.disabled = false;
     } else {
-        uploadBtn.style.display = 'none';
+        uploadBtn.classList.add('hidden');
     }
 }
 
@@ -240,12 +243,12 @@ async function uploadFiles() {
 
 // 顯示進度條
 function showProgress() {
-    document.getElementById('progressSection').style.display = 'block';
+    document.getElementById('progressSection').classList.remove('hidden');
 }
 
 // 隱藏進度條
 function hideProgress() {
-    document.getElementById('progressSection').style.display = 'none';
+    document.getElementById('progressSection').classList.add('hidden');
 }
 
 // 更新進度

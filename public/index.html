@@ -3,59 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💕 婚禮回憶上傳 - Google Photos</title>
-    <link rel="stylesheet" href="style.css">
+    <title>💕 皇展 & 宇鈞 - 婚禮回憶上傳</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': {
+                            '50': '#fef2f2',
+                            '100': '#fee2e2',
+                            '200': '#fecaca',
+                            '300': '#fca5a5',
+                            '400': '#f87171',
+                            '500': '#ef4444',
+                            '600': '#dc2626',
+                            '700': '#b91c1c',
+                            '800': '#991b1b',
+                            '900': '#7f1d1d'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+        .text-shadow-lg {
+            text-shadow: 2px 4px 8px rgba(0,0,0,0.5);
+        }
+        .hover\:scale-102:hover {
+            transform: scale(1.02);
+        }
+        /* 錨點偏移，避免標題被固定導航欄遮住 */
+        #uploadSection {
+            scroll-margin-top: 2rem;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>💕 歡迎來皇展和宇鈞的婚禮 💕</h1>
-        <p class="subtitle">將美好時光永遠保存，與我們一起分享這份喜悅 ✨</p>
-        <p style="text-align: center; margin-bottom: 20px;">上傳成功後工作人員會把照片列印出來，記得散場後到門口櫃檯領取哦</p>
-        
-        <!-- 授權區域 -->
-        <div id="authSection" class="auth-section" style="display: none;">
-            <div class="auth-icon">🔐</div>
-            <h2>需要 Google 授權</h2>
-            <p>為了將您的珍貴照片安全上傳到 Google Photos，<br>我們需要您的授權許可</p>
-            <button id="authBtn" class="auth-btn">
-                <i class="fab fa-google"></i>
-                授權 Google Photos
-            </button>
-        </div>
-
-        <!-- 上傳區域 -->
-        <div id="uploadSection" class="upload-section">
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📸</div>
-                <div class="upload-text">拖曳照片到這裡，或點擊選擇檔案</div>
-                <div class="upload-hint">支援 JPG、PNG、GIF 格式 • 每次最多 10 張照片</div>
-                <input type="file" id="fileInput" class="file-input" multiple accept="image/*">
-                <button class="select-btn" onclick="document.getElementById('fileInput').click()">
-                    <i class="fas fa-images"></i>
-                    選擇照片
-                </button>
-            </div>
-
-            <!-- 檔案列表 -->
-            <div id="fileList" class="file-list"></div>
-
-            <!-- 上傳按鈕 -->
-            <div style="text-align: center;">
-                <button id="uploadBtn" class="upload-btn" style="display: none;">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    上傳到 Google Photos
-                </button>
-            </div>
-
-            <!-- 進度條 -->
-            <div id="progressSection" class="progress-section">
-                <div class="progress-bar">
-                    <div id="progressFill" class="progress-fill"></div>
+    <div class="w-full bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 min-h-screen">
+        <!-- Hero Section -->
+        <header class="relative h-screen flex items-center justify-center overflow-hidden" style="background-image: url('_G3A3952.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+            <div class="absolute w-full h-full bg-gradient-to-b from-transparent via-rose-900/20 to-rose-900/40"></div>
+            <div class="relative z-10 text-center text-white px-4">
+                <h1 class="mt-20 text-6xl md:text-8xl font-bold mb-4 text-shadow-lg transform hover:scale-105 transition-transform duration-300">
+                    皇展 & 宇鈞
+                </h1>
+                <p class="text-2xl md:text-3xl mb-8 opacity-90">我們結婚了</p>
+                <div class="text-xl md:text-2xl mb-8">
+                    <p>2025年06月29日</p>
                 </div>
-                <div id="progressText" class="progress-text">準備上傳...</div>
+                                 <a href="#uploadSection" class="inline-block bg-rose-500 hover:bg-rose-600 text-white px-8 py-4 rounded-full text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg">
+                     上傳照片
+                 </a>
             </div>
-        </div>
+        </header>
+
+        <!-- Photo Upload Section -->
+        <section class="py-20 px-4 bg-gradient-to-br from-primary-100 to-rose-100">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-8 text-gray-800" id="uploadSection">分享您的照片</h2>
+                <p class="text-center text-lg text-gray-600 mb-12">
+                    我們希望收集這個特別日子的所有美好回憶！請上傳您在婚禮中拍攝的照片。
+                </p>
+
+                <div class="bg-white rounded-3xl shadow-xl p-8">
+                    <!-- 授權區域 -->
+                    <div id="authSection" class="auth-section hidden text-center">
+                        <div class="text-6xl mb-4">🔐</div>
+                        <h2 class="text-2xl font-bold mb-4 text-gray-800">需要 Google 授權</h2>
+                        <p class="text-gray-600 mb-6">為了將您的珍貴照片安全上傳到 Google Photos，<br>我們需要您的授權許可</p>
+                        <button id="authBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-full font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg">
+                            <i class="fab fa-google mr-2"></i>
+                            授權 Google Photos
+                        </button>
+                    </div>
+
+                    <!-- 上傳區域 -->
+                    <div class="upload-section">
+                        <div class="border-2 border-dashed border-primary-300 rounded-2xl p-12 text-center hover:border-primary-500 transition-colors duration-300" id="uploadArea">
+                            <span class="material-symbols-outlined text-6xl text-primary-500 mb-4 block">cloud_upload</span>
+                            <h3 class="text-2xl font-semibold mb-4 text-gray-800">拖放照片到這裡</h3>
+                            <p class="text-gray-600 mb-6">或點擊下方按鈕選擇檔案</p>
+                            <input type="file" multiple accept="image/*" class="hidden" id="fileInput" />
+                            <label
+                                for="fileInput"
+                                class="bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-full font-semibold cursor-pointer inline-block transform hover:scale-105 transition-all duration-300 shadow-lg"
+                            >
+                                選擇照片
+                            </label>
+                            <p class="text-sm text-gray-500 mt-4">支援 JPG, PNG 格式，最大 10MB</p>
+                        </div>
+
+                        <!-- 檔案列表 -->
+                        <div id="fileList" class="mt-6"></div>
+
+                        <!-- 上傳按鈕 -->
+                        <div class="text-center mt-6">
+                            <button id="uploadBtn" class="hidden bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-full font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg">
+                                <i class="fas fa-cloud-upload-alt mr-2"></i>
+                                上傳到 Google Photos
+                            </button>
+                        </div>
+
+                        <!-- 進度條 -->
+                        <div id="progressSection" class="hidden mt-6">
+                            <div class="bg-gray-200 rounded-full h-4 overflow-hidden">
+                                <div id="progressFill" class="bg-primary-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <div id="progressText" class="text-center mt-2 text-gray-600">準備上傳...</div>
+                        </div>
+
+                        <div class="mt-8">
+                            <h4 class="text-xl font-semibold mb-4 text-gray-800">上傳須知：</h4>
+                            <ul class="space-y-2 text-gray-600">
+                                <li class="flex items-center">
+                                    <span class="material-symbols-outlined text-primary-500 mr-3">check_circle</span>
+                                    歡迎分享任何婚禮相關的美好時刻
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="material-symbols-outlined text-primary-500 mr-3">check_circle</span>
+                                    上傳的照片小精靈會把照片印出來
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="mt-8 p-4 bg-primary-50 rounded-xl">
+                            <h4 class="font-semibold text-primary-800 mb-2">留下您的祝福：</h4>
+                            <textarea
+                                placeholder="在這裡寫下您對新人的祝福話語..."
+                                class="w-full p-4 border border-primary-200 rounded-lg resize-none h-24 focus:outline-none focus:border-primary-500 transition-colors duration-300"
+                            ></textarea>
+                            <div class="mt-4 flex flex-col sm:flex-row gap-4">
+                                <input
+                                    type="text"
+                                    placeholder="您的姓名"
+                                    class="flex-1 p-3 border border-primary-200 rounded-lg focus:outline-none focus:border-primary-500 transition-colors duration-300"
+                                />
+                                <button class="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg">
+                                    送出祝福
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Guest Messages Section -->
+        <section class="py-20 px-4 bg-white">
+            <div class="max-w-4xl mx-auto text-center">
+                <h2 class="text-4xl md:text-5xl font-bold mb-8 text-gray-800">賓客留言</h2>
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-rose-50 to-pink-50 p-6 rounded-2xl shadow-lg transform hover:scale-102 transition-transform duration-300">
+                        <p class="text-lg text-gray-700 mb-4 italic">
+                            "恭喜你們！看到你們在一起這麼幸福，真的很替你們開心。祝你們百年好合，永遠幸福快樂！"
+                        </p>
+                        <p class="text-primary-600 font-semibold">- 王小華</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-2xl shadow-lg transform hover:scale-102 transition-transform duration-300">
+                        <p class="text-lg text-gray-700 mb-4 italic">
+                            "祝福新郎新娘白頭偕老，早生貴子！今天的婚禮真的太美了，謝謝你們讓我見證這個美好的時刻。"
+                        </p>
+                        <p class="text-primary-600 font-semibold">- 陳美玲</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-green-50 to-teal-50 p-6 rounded-2xl shadow-lg transform hover:scale-102 transition-transform duration-300">
+                        <p class="text-lg text-gray-700 mb-4 italic">
+                            "看著你們從相識到現在，真的很感動。願你們的愛情像美酒一樣，越久越香醇。新婚快樂！"
+                        </p>
+                        <p class="text-primary-600 font-semibold">- 李志強</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-12 px-4">
+            <div class="max-w-4xl mx-auto text-center">
+                <div class="mb-8">
+                    <span class="material-symbols-outlined text-4xl text-rose-400 mb-4 block">favorite</span>
+                    <h3 class="text-2xl font-semibold mb-4">感謝您的參與</h3>
+                    <p class="text-gray-300 text-lg">您的出席讓我們的大日子更加完美</p>
+                </div>
+
+                <div class="flex justify-center space-x-6 mb-8">
+                    <button class="w-12 h-12 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transform hover:scale-110 transition-all duration-300">
+                        <i class="fab fa-facebook text-xl"></i>
+                    </button>
+                    <button class="w-12 h-12 bg-pink-600 hover:bg-pink-700 rounded-full flex items-center justify-center transform hover:scale-110 transition-all duration-300">
+                        <i class="fab fa-instagram text-xl"></i>
+                    </button>
+                    <button class="w-12 h-12 bg-green-600 hover:bg-green-700 rounded-full flex items-center justify-center transform hover:scale-110 transition-all duration-300">
+                        <i class="fab fa-whatsapp text-xl"></i>
+                    </button>
+                </div>
+
+                <p class="text-gray-400">© 2024 皇展 & 宇鈞 婚禮網站</p>
+            </div>
+        </footer>
     </div>
 
     <script src="script.js"></script>
