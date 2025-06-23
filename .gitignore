@@ -12,12 +12,7 @@ yarn-error.log*
 .env.production.local
 
 # 上傳檔案
-uploads/
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.webp
+uploads/*
 
 # 作業系統
 .DS_Store
