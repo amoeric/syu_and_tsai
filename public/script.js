@@ -35,13 +35,13 @@ async function checkAuthStatus() {
 // 顯示授權區塊
 function showAuthSection() {
     document.getElementById('authSection').classList.remove('hidden');
-    document.getElementById('uploadSection').classList.add('hidden');
+    document.querySelector('.upload-section').classList.add('hidden');
 }
 
 // 顯示上傳區塊
 function showUploadSection() {
     document.getElementById('authSection').classList.add('hidden');
-    document.getElementById('uploadSection').classList.remove('hidden');
+    document.querySelector('.upload-section').classList.remove('hidden');
 }
 
 // 授權函數
@@ -520,16 +520,12 @@ function displayMessages(messages) {
                 <div class="flex-1">
                     <!-- 名稱和時間 -->
                     <div class="flex items-center justify-between mb-2">
-                        <p class="text-sm font-medium text-gray-700">${msg.name}</p>
+                        <p class="text-lg font-medium text-gray-700">${msg.name}</p>
                         <p class="text-xs text-gray-400 ml-2">${formatMessageDate(msg.timestamp)}</p>
                     </div>
                     
                     <!-- 氣泡框 -->
-                    <div class="bg-white rounded-2xl rounded-tl-sm p-4 shadow-sm border border-gray-100 relative">
-                        <!-- 氣泡箭頭 -->
-                        <div class="absolute -left-2 top-3 w-0 h-0 border-t-8 border-t-transparent border-r-8 border-r-white border-b-8 border-b-transparent"></div>
-                        <div class="absolute -left-2.5 top-3 w-0 h-0 border-t-8 border-t-transparent border-r-8 border-r-gray-100 border-b-8 border-b-transparent"></div>
-                        
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-500 relative">
                         <!-- 留言內容 -->
                         <p class="text-gray-800 leading-relaxed text-sm">
                             ${msg.message}

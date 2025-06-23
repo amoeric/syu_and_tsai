@@ -75,3 +75,5 @@ typings/
 
 # Yarn Integrity file
 .yarn-integrity 
+
+wedding_messages.db

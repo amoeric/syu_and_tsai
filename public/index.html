@@ -58,24 +58,26 @@
                 <div class="text-xl md:text-2xl mb-8">
                     <p>2025年06月29日</p>
                 </div>
-                <a href="#uploadSection" class="inline-block bg-rose-500 hover:bg-rose-600 text-white px-8 py-4 rounded-full text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg">
-                     上傳照片
-                </a>
-                <a href="#messagesSection" class="inline-block bg-rose-500 hover:bg-rose-600 text-white px-8 py-4 rounded-full text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg">
-                    留下祝福
-                </a>
+                <div class="flex justify-center gap-4">
+                    <a href="#uploadSection" class="inline-block bg-rose-500 hover:bg-rose-600 text-white px-8 py-4 rounded-full text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg">
+                        上傳照片
+                   </a>
+                   <a href="#messagesSection" class="inline-block bg-rose-500 hover:bg-rose-600 text-white px-8 py-4 rounded-full text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg">
+                       留下祝福
+                   </a>
+                </div>
             </div>
         </header>
 
         <!-- Photo Upload Section -->
-        <section class="py-20 px-4 bg-gradient-to-br from-primary-100 to-rose-100">
+        <section class="py-20 px-4 bg-white" id="uploadSection">
             <div class="max-w-4xl mx-auto">
-                <h2 class="text-4xl md:text-5xl font-bold text-center mb-8 text-gray-800" id="uploadSection">分享您的照片</h2>
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-8 text-gray-800">分享您的照片</h2>
                 <p class="text-center text-lg text-gray-600 mb-12">
                     我們希望收集這個特別日子的所有美好回憶！請上傳您在婚禮中拍攝的照片。
                 </p>
 
-                <div class="bg-white rounded-3xl shadow-xl p-8">
+                <div class="bg-white rounded-3xl shadow-xl border border-gray-200 p-8">
                     <!-- 授權區域 -->
                     <div id="authSection" class="auth-section hidden text-center">
                         <div class="text-6xl mb-4">🔐</div>
@@ -132,7 +134,11 @@
                                 </li>
                                 <li class="flex items-center">
                                     <span class="material-symbols-outlined text-primary-500 mr-3">check_circle</span>
-                                    上傳的照片小精靈會把照片印出來哦
+                                    上傳的照片小精靈會把它印出來哦
+                                </li>
+                                <li class="flex items-center">
+                                    <span class="material-symbols-outlined text-primary-500 mr-3">check_circle</span>
+                                    希望大家玩得開心
                                 </li>
                             </ul>
                         </div>
@@ -142,7 +148,7 @@
         </section>
 
         <!-- Guest Messages Section -->
-        <section class="py-20 px-4 bg-gray-50" id="messagesSection">
+        <section class="py-20 px-4 bg-gradient-to-br from-slate-100 via-gray-100 to-zinc-100" id="messagesSection">
             <div class="max-w-4xl mx-auto">
                 <h2 class="text-4xl md:text-5xl font-bold text-center mb-8 text-gray-800">賓客留言板</h2>
                 
