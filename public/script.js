@@ -51,44 +51,84 @@ function authenticate() {
 
 // 設定事件監聽器
 function setupEventListeners() {
+    console.log('設置事件監聽器...');
+    
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
     const authBtn = document.getElementById('authBtn');
     const uploadBtn = document.getElementById('uploadBtn');
 
+    console.log('DOM 元素檢查:');
+    console.log('uploadArea:', uploadArea);
+    console.log('fileInput:', fileInput);
+    console.log('authBtn:', authBtn);
+    console.log('uploadBtn:', uploadBtn);
+
     // 授權按鈕事件
     if (authBtn) {
         authBtn.addEventListener('click', authenticate);
+        console.log('授權按鈕事件已設置');
     }
 
     // 上傳按鈕事件
     if (uploadBtn) {
         uploadBtn.addEventListener('click', uploadFiles);
+        console.log('上傳按鈕事件已設置');
     }
 
     // 檔案選擇事件
-    fileInput.addEventListener('change', handleFileSelect);
+    if (fileInput) {
+        fileInput.addEventListener('change', handleFileSelect);
+        console.log('檔案選擇事件已設置');
+        
+        // 測試檔案輸入是否正常工作
+        fileInput.addEventListener('click', () => {
+            console.log('檔案輸入被點擊');
+        });
+    } else {
+        console.error('找不到檔案輸入元素！');
+    }
 
     // 拖拽區域事件
-    uploadArea.addEventListener('click', (e) => {
-        // 避免與按鈕衝突
-        if (!e.target.closest('.select-btn')) {
-            fileInput.click();
-        }
-    });
-    
-    uploadArea.addEventListener('dragover', handleDragOver);
-    uploadArea.addEventListener('dragleave', handleDragLeave);
-    uploadArea.addEventListener('drop', handleDrop);
+    if (uploadArea) {
+        uploadArea.addEventListener('click', (e) => {
+            console.log('上傳區域被點擊:', e.target);
+            // 避免與按鈕衝突
+            if (!e.target.closest('.select-btn')) {
+                if (fileInput) {
+                    console.log('觸發檔案選擇對話框');
+                    fileInput.click();
+                } else {
+                    console.error('檔案輸入元素不存在，無法觸發檔案選擇');
+                }
+            }
+        });
+        
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        console.log('拖拽區域事件已設置');
+    } else {
+        console.error('找不到上傳區域元素！');
+    }
 }
 
 // 處理檔案選擇
 function handleFileSelect(event) {
-    const files = Array.from(event.target.files);
-    addFiles(files);
-    
-    // 清除檔案輸入的值，避免重複選擇問題
-    event.target.value = '';
+    try {
+        console.log('檔案選擇事件觸發:', event);
+        const files = Array.from(event.target.files);
+        console.log('選擇的檔案數量:', files.length);
+        console.log('檔案列表:', files.map(f => ({ name: f.name, type: f.type, size: f.size })));
+        
+        addFiles(files);
+        
+        // 清除檔案輸入的值，避免重複選擇問題
+        event.target.value = '';
+    } catch (error) {
+        console.error('檔案選擇處理錯誤:', error);
+        showNotification('error', '檔案選擇失敗', '請重新選擇檔案，或嘗試重新整理頁面');
+    }
 }
 
 // 處理拖拽懸停
@@ -117,31 +157,51 @@ function handleDrop(event) {
 
 // 添加檔案到清單
 function addFiles(files) {
-    // 篩選圖片檔案
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
-    if (imageFiles.length === 0) {
-        showNotification('error', '請選擇圖片檔案！', '只支援 JPG、PNG、GIF 格式的圖片');
-        return;
-    }
-
-    // 檢查檔案數量限制
-    if (selectedFiles.length + imageFiles.length > 10) {
-        showNotification('error', '檔案數量超過限制', '每次最多只能上傳 10 張照片');
-        return;
-    }
-
-    // 添加新檔案到清單
-    imageFiles.forEach(file => {
-        if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
-            selectedFiles.push(file);
+    try {
+        console.log('開始處理檔案:', files.length, '個檔案');
+        
+        // 篩選圖片檔案
+        const imageFiles = files.filter(file => {
+            const isImage = file.type.startsWith('image/');
+            console.log(`檔案 ${file.name}: 類型=${file.type}, 是圖片=${isImage}`);
+            return isImage;
+        });
+        
+        console.log('篩選後的圖片檔案數量:', imageFiles.length);
+        
+        if (imageFiles.length === 0) {
+            console.log('沒有找到圖片檔案');
+            showNotification('error', '請選擇圖片檔案！', '只支援 JPG、PNG、GIF 格式的圖片');
+            return;
         }
-    });
 
-    updateFileList();
-    updateUploadButton();
-    
-    showNotification('success', '照片已選擇', `已選擇 ${selectedFiles.length} 張美好的回憶照片 📸`);
+        // 檢查檔案數量限制
+        if (selectedFiles.length + imageFiles.length > 10) {
+            console.log('檔案數量超過限制:', selectedFiles.length + imageFiles.length);
+            showNotification('error', '檔案數量超過限制', '每次最多只能上傳 10 張照片');
+            return;
+        }
+
+        // 添加新檔案到清單
+        imageFiles.forEach(file => {
+            if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                selectedFiles.push(file);
+                console.log('添加檔案:', file.name);
+            } else {
+                console.log('檔案已存在，跳過:', file.name);
+            }
+        });
+
+        console.log('目前選擇的檔案總數:', selectedFiles.length);
+        
+        updateFileList();
+        updateUploadButton();
+        
+        showNotification('success', '照片已選擇', `已選擇 ${selectedFiles.length} 張美好的回憶照片 📸`);
+    } catch (error) {
+        console.error('添加檔案錯誤:', error);
+        showNotification('error', '處理檔案時發生錯誤', '請重新選擇檔案');
+    }
 }
 
 // 更新檔案清單顯示
