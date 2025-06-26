@@ -537,6 +537,127 @@ app.post('/messages', (req, res) => {
   }
 });
 
+// 路由：取得相簿預覽
+app.get('/album-preview', async (req, res) => {
+  try {
+    console.log('🖼️ 開始載入相簿預覽...');
+    
+    // 檢查是否已授權
+    if (!oauth2Client.credentials || !oauth2Client.credentials.access_token) {
+      console.log('❌ 未授權，返回空相簿');
+      return res.json({ photos: [], albumUrl: null });
+    }
+    
+    // 建立 Google Photos API 客戶端（使用直接的 HTTP 請求）
+    const accessToken = oauth2Client.credentials.access_token;
+    
+    let albumId = cachedAlbumId;
+    let albumUrl = null;
+    
+    // 如果沒有快取的相簿 ID，嘗試找到婚禮相簿
+    if (!albumId) {
+      try {
+        const albumsResponse = await fetch('https://photoslibrary.googleapis.com/v1/albums?pageSize=50', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!albumsResponse.ok) {
+          throw new Error(`HTTP ${albumsResponse.status}: ${albumsResponse.statusText}`);
+        }
+        
+        const albumsData = await albumsResponse.json();
+        const albums = albumsData.albums || [];
+        const weddingAlbum = albums.find(album => album.title === WEDDING_ALBUM_NAME);
+        
+        if (weddingAlbum) {
+          albumId = weddingAlbum.id;
+          cachedAlbumId = albumId;
+          albumUrl = weddingAlbum.productUrl;
+          console.log(`✅ 找到婚禮相簿: ${WEDDING_ALBUM_NAME}`);
+        } else {
+          console.log('❌ 未找到婚禮相簿');
+          return res.json({ photos: [], albumUrl: null });
+        }
+      } catch (error) {
+        console.error('❌ 列出相簿失敗:', error.message);
+        return res.json({ photos: [], albumUrl: null });
+      }
+    }
+    
+    // 取得相簿中的照片（前5張）
+    try {
+      const searchResponse = await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:search', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          albumId: albumId,
+          pageSize: 5  // 只要前5張
+        })
+      });
+      
+      if (!searchResponse.ok) {
+        throw new Error(`HTTP ${searchResponse.status}: ${searchResponse.statusText}`);
+      }
+      
+      const searchData = await searchResponse.json();
+      const mediaItems = searchData.mediaItems || [];
+      console.log(`📸 找到 ${mediaItems.length} 張照片`);
+      
+      // 處理照片資料
+      const photos = mediaItems.map(item => ({
+        id: item.id,
+        filename: item.filename,
+        thumbnailUrl: `${item.baseUrl}=w400-h400-c`, // 400x400 縮圖
+        fullUrl: `${item.baseUrl}=w1920-h1080`, // 較大尺寸
+        mimeType: item.mimeType,
+        creationTime: item.mediaMetadata?.creationTime
+      }));
+      
+      // 如果還沒有相簿 URL，嘗試從相簿資訊中取得
+      if (!albumUrl && albumId) {
+        try {
+          const albumResponse = await fetch(`https://photoslibrary.googleapis.com/v1/albums/${albumId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (albumResponse.ok) {
+            const albumData = await albumResponse.json();
+            albumUrl = albumData.productUrl;
+          }
+        } catch (error) {
+          console.log('⚠️ 無法取得相簿 URL:', error.message);
+        }
+      }
+      
+      console.log('✅ 相簿預覽載入成功');
+      res.json({ 
+        photos: photos,
+        albumUrl: albumUrl,
+        albumName: WEDDING_ALBUM_NAME
+      });
+      
+    } catch (error) {
+      console.error('❌ 搜尋相簿照片失敗:', error.message);
+      res.json({ photos: [], albumUrl: albumUrl });
+    }
+    
+  } catch (error) {
+    console.error('❌ 載入相簿預覽失敗:', error);
+    res.status(500).json({ error: '載入相簿預覽失敗' });
+  }
+});
+
 // 路由：檢查授權狀態
 app.get('/auth-status', (req, res) => {
   const isAuthenticated = oauth2Client.credentials && oauth2Client.credentials.access_token;

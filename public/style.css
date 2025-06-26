@@ -378,4 +378,74 @@ h1 {
         left: 10px;
         max-width: none;
     }
-} 
+}
+
+/* 燈箱動畫 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* 燈箱樣式 */
+#photoLightbox {
+    transition: opacity 0.3s ease-out;
+}
+
+#photoLightbox img {
+    transition: opacity 0.3s ease-out;
+}
+
+/* 燈箱按鈕懸停效果 */
+#photoLightbox button:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    transform: scale(1.1);
+}
+
+/* 載入動畫 */
+#lightboxLoading {
+    transition: opacity 0.3s ease-out;
+}
+
+/* 手機版燈箱優化 */
+@media (max-width: 768px) {
+    #photoLightbox .relative {
+        padding: 20px 10px;
+    }
+    
+    #photoLightbox button {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 20px !important;
+    }
+    
+    #photoLightbox .absolute.top-4.right-4 {
+        top: 10px !important;
+        right: 10px !important;
+    }
+    
+    #photoLightbox .absolute.left-4 {
+        left: 10px !important;
+    }
+    
+    #photoLightbox .absolute.right-4 {
+        right: 10px !important;
+    }
+    
+    #photoLightbox img {
+        max-height: 85vh !important;
+        max-width: 95vw !important;
+    }
+}

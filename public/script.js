@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupMessageForm();
     setupInfiniteScroll();
     loadMessages();
+    loadAlbumPreview();
 });
 
 // 檢查授權狀態
@@ -706,4 +707,295 @@ function formatDate(timestamp) {
     } else {
         return date.toLocaleDateString('zh-TW');
     }
-} 
+}
+
+// 載入相簿預覽
+async function loadAlbumPreview() {
+    console.log('開始載入相簿預覽...');
+    
+    const loadingEl = document.getElementById('albumLoading');
+    const gridEl = document.getElementById('albumGrid');
+    const emptyEl = document.getElementById('albumEmpty');
+    const viewMoreBtn = document.getElementById('viewMoreBtn');
+    
+    try {
+        // 顯示載入狀態
+        loadingEl.classList.remove('hidden');
+        gridEl.classList.add('hidden');
+        emptyEl.classList.add('hidden');
+        if (viewMoreBtn) {
+            viewMoreBtn.classList.add('hidden');
+        }
+        
+        const response = await fetch('/album-preview');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('相簿預覽資料:', data);
+        
+        // 隱藏載入狀態
+        loadingEl.classList.add('hidden');
+        
+        if (data.photos && data.photos.length > 0) {
+            // 顯示照片網格
+            displayAlbumPhotos(data.photos);
+            gridEl.classList.remove('hidden');
+            
+            // 如果有相簿連結，顯示查看更多按鈕
+            if (data.albumUrl && viewMoreBtn) {
+                const viewMoreLink = viewMoreBtn.querySelector('a');
+                if (viewMoreLink) {
+                    viewMoreLink.href = data.albumUrl;
+                }
+                viewMoreBtn.classList.remove('hidden');
+            }
+        } else {
+            // 顯示空狀態
+            emptyEl.classList.remove('hidden');
+        }
+        
+    } catch (error) {
+        console.error('載入相簿預覽失敗:', error);
+        
+        // 隱藏載入狀態，顯示空狀態
+        loadingEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        
+        // 可以選擇顯示錯誤訊息或保持靜默
+        // showNotification('error', '載入相簿失敗', '無法載入相簿預覽，請稍後再試');
+    }
+}
+
+// 顯示相簿照片
+function displayAlbumPhotos(photos) {
+    const gridEl = document.getElementById('albumGrid');
+    
+    // 清空現有內容
+    gridEl.innerHTML = `
+        <!-- 手機版：水平滾動容器 -->
+        <div class="md:hidden overflow-x-auto pb-4 album-scroll">
+            <div class="flex gap-4 w-max">
+                <!-- 手機版照片會在這裡動態載入 -->
+            </div>
+        </div>
+        <!-- 桌面版：網格布局 -->
+        <div class="hidden md:grid md:grid-cols-5 gap-4">
+            <!-- 桌面版照片會在這裡動態載入 -->
+        </div>
+    `;
+    
+    // 取得容器元素
+    const mobileContainer = gridEl.querySelector('.md\\:hidden .flex');
+    const desktopContainer = gridEl.querySelector('.hidden.md\\:grid');
+    
+    photos.forEach((photo, index) => {
+        // 創建手機版照片元素（固定寬度，可水平滾動）
+        const mobilePhotoEl = document.createElement('div');
+        mobilePhotoEl.className = 'relative group overflow-hidden rounded-2xl bg-gray-100 hover:shadow-lg transition-all duration-300 transform hover:scale-105 flex-shrink-0';
+        mobilePhotoEl.style.width = '120px';
+        mobilePhotoEl.style.height = '120px';
+        
+        mobilePhotoEl.innerHTML = `
+            <img 
+                src="${photo.thumbnailUrl}" 
+                alt="婚禮照片 ${index + 1}"
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                loading="lazy"
+                onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full bg-gray-200 text-2xl\\'>📷</div>'"
+            />
+            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                <span class="material-symbols-outlined text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-lg">
+                    zoom_in
+                </span>
+            </div>
+        `;
+        
+        // 創建桌面版照片元素（響應式網格）
+        const desktopPhotoEl = document.createElement('div');
+        desktopPhotoEl.className = 'relative group overflow-hidden rounded-2xl aspect-square bg-gray-100 hover:shadow-lg transition-all duration-300 transform hover:scale-105';
+        
+        desktopPhotoEl.innerHTML = `
+            <img 
+                src="${photo.thumbnailUrl}" 
+                alt="婚禮照片 ${index + 1}"
+                class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                loading="lazy"
+                onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full bg-gray-200\\'>📷</div>'"
+            />
+            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                <span class="material-symbols-outlined text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-2xl">
+                    zoom_in
+                </span>
+            </div>
+        `;
+        
+        // 點擊照片時的行為
+        const clickHandler = () => {
+            openLightbox(photo, index, photos);
+        };
+        
+        mobilePhotoEl.addEventListener('click', clickHandler);
+        desktopPhotoEl.addEventListener('click', clickHandler);
+        
+        // 添加到對應容器
+        mobileContainer.appendChild(mobilePhotoEl);
+        desktopContainer.appendChild(desktopPhotoEl);
+    });
+}
+
+// 燈箱功能
+let currentLightboxIndex = 0;
+let currentLightboxPhotos = [];
+
+function openLightbox(photo, index, photos) {
+    currentLightboxIndex = index;
+    currentLightboxPhotos = photos;
+    
+    // 創建燈箱元素
+    const lightbox = document.createElement('div');
+    lightbox.id = 'photoLightbox';
+    lightbox.className = 'fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 backdrop-blur-sm';
+    lightbox.style.animation = 'fadeIn 0.3s ease-out';
+    
+    lightbox.innerHTML = `
+        <div class="relative max-w-full max-h-full p-4 flex items-center justify-center">
+            <!-- 關閉按鈕 -->
+            <button class="absolute top-4 right-4 text-white text-3xl hover:text-gray-300 transition-colors z-10 w-12 h-12 flex items-center justify-center rounded-full hover:bg-white hover:bg-opacity-20" onclick="closeLightbox()">
+                ×
+            </button>
+            
+            <!-- 上一張按鈕 -->
+            <button class="absolute left-4 top-1/2 transform -translate-y-1/2 text-white text-3xl hover:text-gray-300 transition-colors z-10 w-12 h-12 flex items-center justify-center rounded-full hover:bg-white hover:bg-opacity-20 ${photos.length <= 1 ? 'hidden' : ''}" onclick="previousPhoto()">
+                ‹
+            </button>
+            
+            <!-- 下一張按鈕 -->
+            <button class="absolute right-4 top-1/2 transform -translate-y-1/2 text-white text-3xl hover:text-gray-300 transition-colors z-10 w-12 h-12 flex items-center justify-center rounded-full hover:bg-white hover:bg-opacity-20 ${photos.length <= 1 ? 'hidden' : ''}" onclick="nextPhoto()">
+                ›
+            </button>
+            
+            <!-- 照片容器 -->
+            <div class="relative max-w-full max-h-full">
+                <img id="lightboxImage" 
+                     src="${photo.thumbnailUrl.replace('=w400-h400-c', '=w1200-h1200')}" 
+                     alt="婚禮照片 ${index + 1}"
+                     class="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                     style="max-height: 90vh; max-width: 90vw;"
+                     onerror="this.src='${photo.thumbnailUrl}'"
+                />
+                
+                <!-- 載入動畫 -->
+                <div id="lightboxLoading" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+                </div>
+            </div>
+            
+            <!-- 照片計數器 -->
+            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black bg-opacity-50 px-4 py-2 rounded-full ${photos.length <= 1 ? 'hidden' : ''}">
+                ${index + 1} / ${photos.length}
+            </div>
+        </div>
+    `;
+    
+    // 添加到頁面
+    document.body.appendChild(lightbox);
+    
+    // 設置圖片載入事件
+    const img = lightbox.querySelector('#lightboxImage');
+    const loading = lightbox.querySelector('#lightboxLoading');
+    
+    img.onload = () => {
+        loading.style.display = 'none';
+    };
+    
+    // 點擊背景關閉燈箱
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) {
+            closeLightbox();
+        }
+    });
+    
+    // 鍵盤事件
+    document.addEventListener('keydown', handleLightboxKeydown);
+    
+    // 防止背景滾動
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+    const lightbox = document.getElementById('photoLightbox');
+    if (lightbox) {
+        lightbox.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => {
+            lightbox.remove();
+        }, 300);
+    }
+    
+    // 移除鍵盤事件監聽
+    document.removeEventListener('keydown', handleLightboxKeydown);
+    
+    // 恢復背景滾動
+    document.body.style.overflow = '';
+}
+
+function previousPhoto() {
+    if (currentLightboxPhotos.length <= 1) return;
+    
+    currentLightboxIndex = (currentLightboxIndex - 1 + currentLightboxPhotos.length) % currentLightboxPhotos.length;
+    updateLightboxPhoto();
+}
+
+function nextPhoto() {
+    if (currentLightboxPhotos.length <= 1) return;
+    
+    currentLightboxIndex = (currentLightboxIndex + 1) % currentLightboxPhotos.length;
+    updateLightboxPhoto();
+}
+
+function updateLightboxPhoto() {
+    const img = document.getElementById('lightboxImage');
+    const loading = document.getElementById('lightboxLoading');
+    const counter = document.querySelector('.absolute.bottom-4');
+    
+    if (!img || !currentLightboxPhotos[currentLightboxIndex]) return;
+    
+    // 顯示載入動畫
+    loading.style.display = 'flex';
+    
+    // 更新照片
+    const photo = currentLightboxPhotos[currentLightboxIndex];
+    img.src = photo.thumbnailUrl.replace('=w400-h400-c', '=w1200-h1200');
+    img.alt = `婚禮照片 ${currentLightboxIndex + 1}`;
+    
+    // 更新計數器
+    if (counter) {
+        counter.textContent = `${currentLightboxIndex + 1} / ${currentLightboxPhotos.length}`;
+    }
+    
+    // 圖片載入完成後隱藏載入動畫
+    img.onload = () => {
+        loading.style.display = 'none';
+    };
+    
+    // 如果高畫質載入失敗，回退到縮圖
+    img.onerror = () => {
+        img.src = photo.thumbnailUrl;
+    };
+}
+
+function handleLightboxKeydown(e) {
+    switch(e.key) {
+        case 'Escape':
+            closeLightbox();
+            break;
+        case 'ArrowLeft':
+            previousPhoto();
+            break;
+        case 'ArrowRight':
+            nextPhoto();
+            break;
+    }
+}

@@ -47,10 +47,26 @@
         #uploadSection {
             scroll-margin-top: 2rem;
         }
+        
+        /* 手機版相簿滾動條美化 */
+        .album-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        .album-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+        .album-scroll::-webkit-scrollbar-thumb {
+            background: rgba(244, 63, 94, 0.5);
+            border-radius: 3px;
+        }
+        .album-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(244, 63, 94, 0.7);
+        }
     </style>
 </head>
 <body>
-    <div class="w-full bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 min-h-screen">
+    <div class="w-full min-h-screen">
         <!-- Hero Section -->
         <header class="relative h-screen flex items-center justify-center overflow-hidden" style="background-image: url('_G3A3952.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
             <div class="absolute w-full h-full bg-gradient-to-b from-transparent via-rose-900/20 to-rose-900/40"></div>
@@ -73,11 +89,42 @@
             </div>
         </header>
 
+
+        <section id="albumPreview" class="bg-white py-8">
+          <div class="max-w-4xl mx-auto">
+            <!-- 載入狀態 -->
+            <div id="albumLoading" class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-2xl text-rose-500 mb-4"></i>
+                <p class="text-gray-600">載入相簿中...</p>
+            </div>
+            
+            <!-- 相簿照片網格 -->
+            <div id="albumGrid" class="hidden">
+                <!-- 手機版：水平滾動容器 -->
+                <div class="md:hidden overflow-x-auto pb-4">
+                    <div class="flex gap-4 w-max">
+                        <!-- 手機版照片會在這裡動態載入 -->
+                    </div>
+                </div>
+                <!-- 桌面版：網格布局 -->
+                <div class="hidden md:grid md:grid-cols-5 gap-4">
+                    <!-- 桌面版照片會在這裡動態載入 -->
+                </div>
+            </div>
+            
+            <!-- 沒有照片時的顯示 -->
+            <div id="albumEmpty" class="hidden text-center py-8">
+                <span class="material-symbols-outlined text-6xl text-gray-300 mb-4 block">photo_camera</span>
+                <p class="text-gray-500 text-lg mb-2">還沒有照片分享</p>
+            </div>
+          </div>
+        </section>
+
         <!-- Photo Upload Section -->
-        <section class="py-20 px-4 bg-white" id="uploadSection">
+        <section class="py-4 px-4 bg-white" id="uploadSection">
             <div class="max-w-4xl mx-auto">
                 <h2 class="text-4xl md:text-5xl font-bold text-center mb-8 text-gray-800">分享您的照片</h2>
-                <p class="text-center text-lg text-gray-600 mb-12">
+                <p class="text-center text-lg text-gray-600 mb-4">
                     我們希望收集這個特別日子的所有美好回憶！請上傳您在婚禮中拍攝的照片。
                 </p>
 
@@ -152,7 +199,7 @@
         </section>
 
         <!-- Guest Messages Section -->
-        <section class="py-20 px-4 bg-gradient-to-br from-slate-100 via-gray-100 to-zinc-100" id="messagesSection">
+        <section class="py-8 px-4 bg-gradient-to-br from-slate-100 via-gray-100 to-zinc-100" id="messagesSection">
             <div class="max-w-4xl mx-auto">
                 <h2 class="text-4xl md:text-5xl font-bold text-center mb-8 text-gray-800">賓客留言板</h2>
                 
