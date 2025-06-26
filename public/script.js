@@ -1018,9 +1018,9 @@ function initSlideshow() {
     
     // 定義 amin 資料夾中的照片（已轉換為JPG格式）
     slideImages = [
-        'IMG_5310.jpg', 'IMG_4267.jpg', 'IMG_5070.jpg', 'IMG_5094.jpg', 'IMG_3257.jpg',
-        'IMG_3330.jpg', 'IMG_3546.jpg', 'IMG_3931.jpg', 'IMG_3621.png', 'IMG_2903.jpg',
-        'IMG_2735.jpg', 'IMG_2663.jpg'
+        'IMG_5310.jpg', 'IMG_4267.jpg', 'IMG_3608.jpg', 'IMG_5070.jpg', 'IMG_5094.jpg',
+        'IMG_3257.jpg', 'IMG_3330.jpg', 'IMG_3546.jpg', 'IMG_2767.jpg', 'IMG_3931.jpg',
+        'IMG_3621.png', 'IMG_2903.jpg', 'IMG_2735.jpg', 'IMG_2663.jpg'
     ];
     
     createSlideElements();
