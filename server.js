@@ -588,7 +588,7 @@ app.get('/album-preview', async (req, res) => {
       }
     }
     
-    // 取得相簿中的照片（前5張）
+    // 取得相簿中的照片（最新5張）
     try {
       const searchResponse = await fetch('https://photoslibrary.googleapis.com/v1/mediaItems:search', {
         method: 'POST',
@@ -598,7 +598,8 @@ app.get('/album-preview', async (req, res) => {
         },
         body: JSON.stringify({
           albumId: albumId,
-          pageSize: 5  // 只要前5張
+          pageSize: 50,  // 先取得更多照片以便排序
+          orderBy: 'MediaMetadata.creation_time desc'  // 按建立時間降序排列（最新的在前）
         })
       });
       
@@ -610,8 +611,19 @@ app.get('/album-preview', async (req, res) => {
       const mediaItems = searchData.mediaItems || [];
       console.log(`📸 找到 ${mediaItems.length} 張照片`);
       
+      // 按建立時間排序（最新的在前）並只取前5張
+      const sortedItems = mediaItems
+        .sort((a, b) => {
+          const timeA = new Date(a.mediaMetadata?.creationTime || 0);
+          const timeB = new Date(b.mediaMetadata?.creationTime || 0);
+          return timeB - timeA; // 降序排列（最新的在前）
+        })
+        .slice(0, 5); // 只取前5張
+      
+      console.log(`📸 取得最新 ${sortedItems.length} 張照片`);
+      
       // 處理照片資料
-      const photos = mediaItems.map(item => ({
+      const photos = sortedItems.map(item => ({
         id: item.id,
         filename: item.filename,
         thumbnailUrl: `${item.baseUrl}=w400-h400-c`, // 400x400 縮圖

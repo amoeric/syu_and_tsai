@@ -295,6 +295,11 @@ async function uploadFiles() {
             updateFileList();
             updateUploadButton();
             
+            // 刷新相簿預覽以顯示新上傳的照片
+            setTimeout(() => {
+                loadAlbumPreview();
+            }, 1000);
+            
             // 延遲隱藏進度條
             setTimeout(() => {
                 hideProgress();
