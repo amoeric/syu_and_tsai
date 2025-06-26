@@ -504,3 +504,35 @@ h1 {
         margin-bottom: 24px !important;
     }
 }
+
+/* 留言板滾動條樣式 */
+.messages-container {
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: #e5e7eb #f3f4f6;
+}
+
+/* Webkit 瀏覽器 (Chrome, Safari) */
+.messages-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 4px;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db;
+}
+
+/* 留言板平滑滾動 */
+.messages-container {
+    scroll-behavior: smooth;
+}

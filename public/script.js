@@ -6,6 +6,9 @@ let isLoading = false;
 let hasMore = true;
 let allMessages = [];
 
+// 自動刷新變數
+let autoRefreshInterval = null;
+
 // 頁面載入時檢查授權狀態
 document.addEventListener('DOMContentLoaded', function() {
     checkAuthStatus();
@@ -15,6 +18,12 @@ document.addEventListener('DOMContentLoaded', function() {
     loadMessages();
     loadAlbumPreview();
     initSlideshow();
+    startAutoRefreshMessages();
+});
+
+// 頁面卸載時清理定時器
+window.addEventListener('beforeunload', function() {
+    stopAutoRefreshMessages();
 });
 
 // 檢查授權狀態
@@ -600,11 +609,17 @@ async function submitMessage() {
             messageTextarea.value = '';
             messageNameInput.value = '';
             
-            // 重新載入留言（重置為第一頁）
-            currentPage = 1;
-            hasMore = true;
-            allMessages = [];
-            loadMessages();
+            // 稍等一下再刷新留言區塊，確保新留言已被處理
+            setTimeout(() => {
+                // 重新載入留言（重置為第一頁）
+                currentPage = 1;
+                hasMore = true;
+                allMessages = [];
+                loadMessages();
+                
+                // 重新啟動自動刷新定時器，避免與手動刷新衝突
+                restartAutoRefreshMessages();
+            }, 500);
         } else {
             throw new Error(result.error || '留言失敗');
         }
@@ -713,6 +728,44 @@ function formatDate(timestamp) {
     } else {
         return date.toLocaleDateString('zh-TW');
     }
+}
+
+// 開始自動刷新留言
+function startAutoRefreshMessages() {
+    // 清除現有的定時器（如果存在）
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+    
+    // 設置每5秒自動刷新留言
+    autoRefreshInterval = setInterval(() => {
+        // 只有在不正在載入時才自動刷新
+        if (!isLoading) {
+            console.log('自動刷新留言...');
+            // 重置為第一頁並載入最新留言
+            currentPage = 1;
+            hasMore = true;
+            allMessages = [];
+            loadMessages();
+        }
+    }, 5000); // 5秒 = 5000毫秒
+    
+    console.log('已啟動留言自動刷新（每5秒）');
+}
+
+// 停止自動刷新留言
+function stopAutoRefreshMessages() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+        console.log('已停止留言自動刷新');
+    }
+}
+
+// 重新啟動自動刷新留言
+function restartAutoRefreshMessages() {
+    stopAutoRefreshMessages();
+    startAutoRefreshMessages();
 }
 
 // 載入相簿預覽
