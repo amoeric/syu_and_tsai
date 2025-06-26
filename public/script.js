@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupInfiniteScroll();
     loadMessages();
     loadAlbumPreview();
+    initSlideshow();
 });
 
 // 檢查授權狀態
@@ -996,6 +997,191 @@ function handleLightboxKeydown(e) {
             break;
         case 'ArrowRight':
             nextPhoto();
+            break;
+    }
+}
+
+// 幻燈片功能
+let slideImages = [];
+let currentSlideIndex = 0;
+let isSlideAutoPlay = true;
+let slideInterval;
+
+// 初始化幻燈片
+function initSlideshow() {
+    console.log('初始化幻燈片...');
+    
+    // 定義 amin 資料夾中的照片（已轉換為JPG格式）
+    slideImages = [
+        'IMG_2663.jpg', 'IMG_2735.jpg', 'IMG_2903.jpg', 'IMG_3257.jpg', 
+        'IMG_3330.jpg', 'IMG_3546.jpg', 'IMG_3931.jpg', 'IMG_4267.jpg', 
+        'IMG_5070.jpg', 'IMG_5094.jpg', 'IMG_5310.jpg'
+    ];
+    
+    createSlideElements();
+    setupSlideControls();
+    startAutoPlay();
+    
+    // 隱藏載入狀態
+    document.getElementById('slideshowLoading').style.display = 'none';
+}
+
+// 創建幻燈片元素
+function createSlideElements() {
+    const container = document.getElementById('slideshowContainer');
+    const dotsContainer = document.getElementById('slideshowDots');
+    
+    // 清空容器
+    container.innerHTML = '';
+    dotsContainer.innerHTML = '';
+    
+    // 創建幻燈片
+    slideImages.forEach((imageName, index) => {
+        // 創建幻燈片
+        const slide = document.createElement('div');
+        slide.className = 'w-full h-full flex-shrink-0 relative';
+        slide.innerHTML = `
+            <img 
+                src="images/amin/${imageName}" 
+                alt="美好回憶 ${index + 1}"
+                class="w-full h-full object-contain bg-white"
+                onerror="this.parentElement.innerHTML='<div class=\\'flex items-center justify-center h-full bg-gray-200 text-4xl\\'>📷</div>'"
+            />
+        `;
+        container.appendChild(slide);
+        
+        // 創建指示點
+        const dot = document.createElement('button');
+        dot.className = `w-3 h-3 rounded-full transition-all duration-300 ${index === 0 ? 'bg-rose-500' : 'bg-gray-300'}`;
+        dot.addEventListener('click', () => goToSlide(index));
+        dotsContainer.appendChild(dot);
+    });
+    
+    // 更新計數器
+    updateSlideCounter();
+}
+
+// 設置幻燈片控制
+function setupSlideControls() {
+    const prevBtn = document.getElementById('prevSlide');
+    const nextBtn = document.getElementById('nextSlide');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    
+    prevBtn.addEventListener('click', previousSlide);
+    nextBtn.addEventListener('click', nextSlide);
+    playPauseBtn.addEventListener('click', toggleAutoPlay);
+    
+    // 鍵盤控制
+    document.addEventListener('keydown', handleSlideKeydown);
+}
+
+// 上一張幻燈片
+function previousSlide() {
+    currentSlideIndex = (currentSlideIndex - 1 + slideImages.length) % slideImages.length;
+    updateSlidePosition();
+    updateSlideDots();
+    updateSlideCounter();
+}
+
+// 下一張幻燈片
+function nextSlide() {
+    currentSlideIndex = (currentSlideIndex + 1) % slideImages.length;
+    updateSlidePosition();
+    updateSlideDots();
+    updateSlideCounter();
+}
+
+// 跳轉到指定幻燈片
+function goToSlide(index) {
+    currentSlideIndex = index;
+    updateSlidePosition();
+    updateSlideDots();
+    updateSlideCounter();
+}
+
+// 更新幻燈片位置
+function updateSlidePosition() {
+    const container = document.getElementById('slideshowContainer');
+    const translateX = -currentSlideIndex * 100;
+    container.style.transform = `translateX(${translateX}%)`;
+}
+
+// 更新指示點
+function updateSlideDots() {
+    const dots = document.querySelectorAll('#slideshowDots button');
+    dots.forEach((dot, index) => {
+        if (index === currentSlideIndex) {
+            dot.className = 'w-3 h-3 rounded-full transition-all duration-300 bg-rose-500';
+        } else {
+            dot.className = 'w-3 h-3 rounded-full transition-all duration-300 bg-gray-300';
+        }
+    });
+}
+
+// 更新計數器
+function updateSlideCounter() {
+    const counter = document.getElementById('slideCounter');
+    counter.textContent = `${currentSlideIndex + 1} / ${slideImages.length}`;
+}
+
+// 開始自動播放
+function startAutoPlay() {
+    if (slideInterval) clearInterval(slideInterval);
+    
+    slideInterval = setInterval(() => {
+        if (isSlideAutoPlay) {
+            nextSlide();
+        }
+    }, 4000); // 4秒切換一次
+}
+
+// 停止自動播放
+function stopAutoPlay() {
+    if (slideInterval) {
+        clearInterval(slideInterval);
+        slideInterval = null;
+    }
+}
+
+// 切換自動播放
+function toggleAutoPlay() {
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const icon = playPauseBtn.querySelector('i');
+    
+    isSlideAutoPlay = !isSlideAutoPlay;
+    
+    if (isSlideAutoPlay) {
+        icon.className = 'fas fa-pause';
+        startAutoPlay();
+    } else {
+        icon.className = 'fas fa-play';
+        stopAutoPlay();
+    }
+}
+
+// 鍵盤控制
+function handleSlideKeydown(e) {
+    // 只有在沒有燈箱開啟時才處理幻燈片鍵盤事件
+    if (document.getElementById('photoLightbox')) return;
+    
+    switch(e.key) {
+        case 'ArrowLeft':
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                previousSlide();
+            }
+            break;
+        case 'ArrowRight':
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                nextSlide();
+            }
+            break;
+        case ' ':
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                toggleAutoPlay();
+            }
             break;
     }
 }
