@@ -10,14 +10,14 @@ let allMessages = [];
 let autoRefreshInterval = null;
 
 // 頁面載入時檢查授權狀態
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     checkAuthStatus();
     setupEventListeners();
     setupMessageForm();
     setupInfiniteScroll();
     loadMessages();
     loadAlbumPreview();
-    initSlideshow();
+    await initSlideshow();
     startAutoRefreshMessages();
 });
 
@@ -1065,16 +1065,61 @@ let currentSlideIndex = 0;
 let isSlideAutoPlay = true;
 let slideInterval;
 
+// 檢測可用的照片
+async function detectAvailableImages() {
+    const availableImages = [];
+    let consecutiveNotFound = 0;
+    const maxConsecutiveMissing = 3; // 連續3張不存在就停止
+    const maxImages = 100; // 最多檢測100張
+    
+    for (let i = 1; i <= maxImages; i++) {
+        const imageName = `${i}.jpg`;
+        const imageExists = await checkImageExists(`images/amin/${imageName}`);
+        
+        if (imageExists) {
+            availableImages.push(imageName);
+            consecutiveNotFound = 0; // 重置計數器
+        } else {
+            consecutiveNotFound++;
+            
+            // 如果連續多張照片不存在，停止檢測
+            if (consecutiveNotFound >= maxConsecutiveMissing) {
+                break;
+            }
+        }
+    }
+    
+    return availableImages;
+}
+
+// 檢查圖片是否存在
+function checkImageExists(imageSrc) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = imageSrc;
+        
+        // 設置超時，避免長時間等待
+        setTimeout(() => resolve(false), 3000);
+    });
+}
+
 // 初始化幻燈片
-function initSlideshow() {
+async function initSlideshow() {
     console.log('初始化幻燈片...');
     
-    // 定義 amin 資料夾中的照片（已轉換為JPG格式）
-    slideImages = [
-        'IMG_5310.jpg', 'IMG_4267.jpg', 'IMG_3608.jpg', 'IMG_5070.jpg', 'IMG_5094.jpg',
-        'IMG_3257.jpg', 'IMG_3330.jpg', 'IMG_3546.jpg', 'IMG_2767.jpg', 'IMG_3931.jpg',
-        'IMG_3621.png', 'IMG_2903.jpg', 'IMG_2735.jpg', 'IMG_2663.jpg'
-    ];
+    // 動態檢測 amin 資料夾中的照片數量
+    slideImages = await detectAvailableImages();
+    
+    if (slideImages.length === 0) {
+        console.log('未找到任何照片，隱藏幻燈片區塊');
+        document.getElementById('slideshowLoading').style.display = 'none';
+        document.querySelector('.slideshow-section').style.display = 'none';
+        return;
+    }
+    
+    console.log(`找到 ${slideImages.length} 張照片:`, slideImages);
     
     createSlideElements();
     setupSlideControls();
